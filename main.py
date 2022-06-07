@@ -7,6 +7,7 @@ Player 1 visited player 3 on night 2: '1v3n2'
 '''
 
 from mlsolver.kripke import World, KripkeStructure
+from mlsolver.formula import *
 
 # Amount of agents in the game
 NO_OF_AGENTS = 3
@@ -32,7 +33,11 @@ def create_worlds(worlds, agents, roles, dict):
     return worlds
 
 
+# Function creates only worlds for agents 1 and 2 and not 3,
+# has to do with the names in the dictionary
 def create_relations(relations_dict, worlds, roles):
+    # This function can be changed to make it so that you give
+    # the name of the agent and it fetches the relations for that particular agent
     for x in range(NO_OF_AGENTS):
         relations_dict[str(x)] = {}
         relations = []
@@ -45,8 +50,15 @@ def create_relations(relations_dict, worlds, roles):
             while bool(connected_worlds):
                 c_world = connected_worlds.pop(0)
                 for z in connected_worlds:
-                    relations.append((str(c_world+1),str(z+1)))
+                    # Assume reflexivity
+                    relations.append((str(c_world + 1), str(c_world + 1)))
+                    relations.append((str(z+1), str(z+1)))
+                    # Assume the other one
+                    relations.append((str(c_world+1), str(z+1)))
+                    relations.append((str(z + 1), str(c_world + 1)))
+                    # Add something for transitivity
         relations_dict[str(x)] = relations
+
 
 def main():
     # Agents and roles
@@ -69,7 +81,20 @@ def main():
     relations_dict = {}
     create_relations(relations_dict, worlds, roles)
 
+    # Kripke structure for agent 1
+    ks = KripkeStructure(worlds, relations_dict['1'])
+
+    # In world 2, for agent 1, 1D is true in every reachable world, because
+    # agent 1 can reach world 1 and world 2 from world 2, thus we have
+    # (ks,w2) |= K_1 1D, thus the formula is true
+    formula = Diamond(Atom('1D'))
+    print(formula.semantic(ks, '2'))
+
+    print("Accessibility relations for agent 1:")
     print(relations_dict['1'])
+    print(relations_dict['2'])
+
+    print("All the possible worlds with their atomic propositions:")
     print(worlds[0])
     print(worlds[1])
     print(worlds[2])
