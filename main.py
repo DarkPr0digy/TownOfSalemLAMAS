@@ -60,6 +60,35 @@ def create_starting_relations(relations_dict, worlds, roles):
         relations_dict[str(x)] = relations
 
 
+def do_simulation():
+    won = False
+    while not won:
+        x = 0
+        # Night -----------
+        # Agents can perform their ability
+        # Do abilities
+        # Give knowledge to agents
+        # Decide which agents died
+
+        # Day -------------
+        # Show which agents died
+        # Did any faction win?
+        # Give agents knowledge of the role of the dead agent
+        # Give agents knowledge of the last will of te dead agent (public announcement)
+        # Remove worlds where the dead agent does not have the role that was shown (public announcement)
+        # Remove accessibility relations to the removed world
+        # Update accessibility relations for each agent
+        # Update possible worlds (if a world has no accessibility relations and it is not the true world, remove it,
+            # its not relevant)
+        # Check if agent knows that all other agents know his role (K role(agent)). If this is the case and the agent is
+            # a townie, he can give information and everyone will see it as truth because townies don't lie
+        # Each agent votes if they know for sure that agent x is bad. agent x gets lynched if majority votes agent x
+        # Won?
+
+        # Night ----------
+        # repeat.
+
+
 def main():
     # Agents and roles
     agents = []
