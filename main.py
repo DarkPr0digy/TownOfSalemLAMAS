@@ -35,7 +35,7 @@ def create_worlds(worlds, agents, roles, dict):
 
 # Function creates only worlds for agents 1 and 2 and not 3,
 # has to do with the names in the dictionary
-def create_relations(relations_dict, worlds, roles):
+def create_starting_relations(relations_dict, worlds, roles):
     # This function can be changed to make it so that you give
     # the name of the agent and it fetches the relations for that particular agent
     for x in range(NO_OF_AGENTS):
@@ -79,7 +79,7 @@ def main():
 
     # Create the relations between worlds for every agent
     relations_dict = {}
-    create_relations(relations_dict, worlds, roles)
+    create_starting_relations(relations_dict, worlds, roles)
 
     # Kripke structure for agent 1
     ks = KripkeStructure(worlds, relations_dict['1'])
@@ -92,7 +92,6 @@ def main():
 
     print("Accessibility relations for agent 1:")
     print(relations_dict['1'])
-    print(relations_dict['2'])
 
     print("All the possible worlds with their atomic propositions:")
     print(worlds[0])
