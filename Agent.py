@@ -6,13 +6,13 @@ class Role(Enum):
     """
     Enum class for the roles of the agents.
     """
-    Lookout = 0
-    Doctor = 1
-    Veteran = 2
-    Escort = 3
-    Godfather = 4
-    Vigilante = 5
-    Mayor = 6
+    LO = 0  # Lookout
+    Doc = 1  # Doc
+    Vet = 2  # Veteran
+    Esc = 3  # Escort
+    GF = 4  # Godfather
+    Vig = 5  # Vigilante
+    May = 6  # Mayor
 
 
 class Agent:
@@ -22,6 +22,7 @@ class Agent:
         self.events = []
         self.name = name
         self.is_alive = True
+        self.knowledge = {name + "_" + str(role.name): True}
 
     def __str__(self):
         return str(self.role.name) + ": " + str(self.name)
@@ -51,7 +52,7 @@ class Agent:
 class Lookout(Agent):
     def __init__(self, name):
         self.name = name
-        super().__init__(Role.Lookout, name)
+        super().__init__(Role.LO, name)
 
     def observe(self, target, someone_visited: bool, who_visited: [Agent]):
         self.register_event(self, target, EventType.Observed)
@@ -63,15 +64,18 @@ class Lookout(Agent):
 
 class Doctor(Agent):
     def __init__(self, name):
-        super().__init__(Role.Doctor, name)
+        super().__init__(Role.Doc, name)
+        self.used_self_heal = False
 
     def heal(self, target):
+        if target == self:
+            self.used_self_heal = True
         self.register_event(self, target, EventType.Healed)
 
 
 class Escort(Agent):
     def __init__(self, name):
-        super().__init__(Role.Escort, name)
+        super().__init__(Role.Esc, name)
 
     def distract(self, target):
         self.register_event(self, target, EventType.Distracted)
@@ -79,7 +83,7 @@ class Escort(Agent):
 
 class Godfather(Agent):
     def __init__(self, name):
-        super().__init__(Role.Godfather, name)
+        super().__init__(Role.GF, name)
 
     def kill(self, target):
         self.register_event(self, target, EventType.Killed)
@@ -87,7 +91,7 @@ class Godfather(Agent):
 
 class Mayor(Agent):
     def __init__(self, name):
-        super().__init__(Role.Mayor, name)
+        super().__init__(Role.May, name)
         self.is_revealed = False
 
     def reveal_self(self):
@@ -101,13 +105,15 @@ class Mayor(Agent):
 
 class Veteran(Agent):
     def __init__(self, name):
-        super().__init__(Role.Veteran, name)
+        super().__init__(Role.Vet, name)
         self.alert = False  # implementation for this
+        self.used_alert = 2
 
-    def change_alert(self, alert):
-        self.alert = alert
+    def change_alert(self):
+        self.alert = True
+        self.used_alert -= 1
 
-    def night_action(self, target, is_visited, visitors):
+    def night_action(self, is_visited, visitors):
         # TODO: I assume they kill all visitors
         if self.alert and is_visited:
             for visitor in visitors:
@@ -116,15 +122,21 @@ class Veteran(Agent):
 
 class Vigilante(Agent):
     def __init__(self, name):
-        super().__init__(Role.Vigilante, name)
+        super().__init__(Role.Vig, name)
 
     def kill(self, target):
         self.register_event(self, target, EventType.Killed)
+
 
 # endregion
 
 
 if __name__ == "__main__":
+    W = Veteran("Bobby Ross")
+    V = Agent(Role.Vet, "Bobby Russo")
+
+    print(W.role.name)
+
     X = Godfather("Don Carlo")
     Y = Mayor("Adam West")
     Z = Lookout(name="Snitch McSnitch")
