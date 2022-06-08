@@ -99,11 +99,19 @@ class Mayor(Agent):
         self.register_event(self, target, EventType.Voted)
 
 
-# TODO: Implementation for Veteran
 class Veteran(Agent):
     def __init__(self, name):
         super().__init__(Role.Veteran, name)
         self.alert = False  # implementation for this
+
+    def change_alert(self, alert):
+        self.alert = alert
+
+    def night_action(self, target, is_visited, visitors):
+        # TODO: I assume they kill all visitors
+        if self.alert and is_visited:
+            for visitor in visitors:
+                self.register_event(self, visitor, EventType.Killed)
 
 
 class Vigilante(Agent):
