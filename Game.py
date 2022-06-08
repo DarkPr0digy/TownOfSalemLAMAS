@@ -35,26 +35,44 @@ class Game:
     def night_routine(self):
         # TODO: IF agent alive - do ability - if dead - do nothing
         # TODO: track all agent decisions to pass necessary info to necessary agents
+        visitations = {}
+        distraction_target = None
+        heal_target = None
+        observe_target = None
+        kill_target = None
+
+        for agent in self.agents:
+            visitations[agent.name] = []
 
         for agent in self.agents:
             if agent.is_alive:
-                if agent.role == Role.Lookout:
+                if agent.role == Role.Escort:
+                    # Distract someone every night
+                    distract_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    while distract_target.role == Role.Esc:
+                        distract_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    agent.distract(distract_target)
+                    visitations[distract_target.name].append(agent)
+
+                elif agent.role == Role.Lookout:
                     # Observe a player each night
-                    target = self.agents[random.randint(0, self.num_agents - 1)]
-                    while target.role == Role.LO:
-                        target = self.agents[random.randint(0, self.num_agents - 1)]
+                    observe_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    while observe_target.role == Role.LO:
+                        observe_target = self.agents[random.randint(0, self.num_agents - 1)]
+
                     # TODO: Fill in these methods with the appropriate information
-                    agent.observe(target, False, [])
+                    agent.observe(observe_target, False, [])
 
                 elif agent.role == Role.Doc:
                     # Heal a player each night
-                    target = self.agents[random.randint(0, self.num_agents - 1)]
+                    heal_target = self.agents[random.randint(0, self.num_agents - 1)]
                     try:
-                        while target.used_self_heal:
-                            target = self.agents[random.randint(0, self.num_agents - 1)]
+                        while heal_target.used_self_heal:
+                            heal_target = self.agents[random.randint(0, self.num_agents - 1)]
                     except AttributeError:
                         pass
-                    agent.heal(target)
+                    agent.heal(heal_target)
+                    visitations[heal_target.name].append(agent)
 
                 elif agent.role == Role.Vet:
                     # TODO: Change Alert Status at end of night
@@ -65,19 +83,49 @@ class Game:
                     # TODO: Implement vet night action
                     agent.night_action(is_visited=False, visitors=[])
 
-                elif agent.role == Role.Escort:
+                elif agent.role == Role.GF:
+                    # Kill someone every night - MVP
+                    if distract_target.role != Role.GF:
+                        kill_target = self.agents[random.randint(0, self.num_agents - 1)]
+                        while kill_target.role == Role.GF:
+                            kill_target = self.agents[random.randint(0, self.num_agents - 1)]
+                        agent.kill(kill_target)
+                        visitations[kill_target.name].append(agent)
+
+                # Skip for now
+                elif agent.role == Role.May:
+                    pass
+                elif agent.role == Role.Vigilante:
+                    pass
+                else:
+                    print("[Error] Something has gone very wrong.")
+
+            #Vet and Doc cant be distracted
+
+        for agent in self.agents:
+            if agent.is_alive:
+                if agent.role == Role.Escort:
                     # Distract someone every night
-                    target = self.agents[random.randint(0, self.num_agents - 1)]
-                    while target.role == Role.Esc:
-                        target = self.agents[random.randint(0, self.num_agents - 1)]
-                    agent.distract(target)
+                    pass
+
+                elif agent.role == Role.Lookout:
+                    # Observe a player each night
+                    # TODO: Fill in these methods with the appropriate information
+                    agent.observe(observe_target, False, [])
+
+                elif agent.role == Role.Doc:
+                    # Heal a player each night
+                    pass
+
+                elif agent.role == Role.Vet:
+                    # TODO: Change Alert Status at end of night
+                    # Choose to go active or not based on PR of dying
+                    # TODO: Implement vet night action
+                    pass
 
                 elif agent.role == Role.GF:
                     # Kill someone every night - MVP
-                    target = self.agents[random.randint(0, self.num_agents - 1)]
-                    while target.role == Role.GF:
-                        target = self.agents[random.randint(0, self.num_agents - 1)]
-                    agent.kill(target)
+                    pass
 
                 # Skip for now
                 elif agent.role == Role.May:

@@ -87,6 +87,7 @@ class Godfather(Agent):
 
     def kill(self, target):
         self.register_event(self, target, EventType.Killed)
+        target.death()
 
 
 class Mayor(Agent):
@@ -118,6 +119,7 @@ class Veteran(Agent):
         if self.alert and is_visited:
             for visitor in visitors:
                 self.register_event(self, visitor, EventType.Killed)
+                visitor.death()
 
 
 class Vigilante(Agent):
@@ -126,6 +128,7 @@ class Vigilante(Agent):
 
     def kill(self, target):
         self.register_event(self, target, EventType.Killed)
+        target.death()
 
 
 # endregion
