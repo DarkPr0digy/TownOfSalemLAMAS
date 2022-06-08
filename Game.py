@@ -33,10 +33,8 @@ class Game:
 
     # region Night Routines
     def night_routine(self):
-        # TODO: IF agent alive - do ability - if dead - do nothing
-        # TODO: track all agent decisions to pass necessary info to necessary agents
         visitations = {}
-        distraction_target = None
+        distract_target = None
         heal_target = None
         observe_target = None
         kill_target = None
@@ -44,6 +42,7 @@ class Game:
         for agent in self.agents:
             visitations[agent.name] = []
 
+        # Loop to decide actions
         for agent in self.agents:
             if agent.is_alive:
                 if agent.role == Role.Escort:
@@ -60,9 +59,6 @@ class Game:
                     while observe_target.role == Role.LO:
                         observe_target = self.agents[random.randint(0, self.num_agents - 1)]
 
-                    # TODO: Fill in these methods with the appropriate information
-                    agent.observe(observe_target, False, [])
-
                 elif agent.role == Role.Doc:
                     # Heal a player each night
                     heal_target = self.agents[random.randint(0, self.num_agents - 1)]
@@ -75,20 +71,18 @@ class Game:
                     visitations[heal_target.name].append(agent)
 
                 elif agent.role == Role.Vet:
-                    # TODO: Change Alert Status at end of night
                     # Choose to go active or not based on PR of dying
                     if random.random() < (1/self.living_agents - 1):
                         if agent.used_alert >= 1:
                             agent.change_alert()
-                    # TODO: Implement vet night action
-                    agent.night_action(is_visited=False, visitors=[])
 
                 elif agent.role == Role.GF:
                     # Kill someone every night - MVP
-                    if distract_target.role != Role.GF:
+                    kill_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    while kill_target.role == Role.GF:
                         kill_target = self.agents[random.randint(0, self.num_agents - 1)]
-                        while kill_target.role == Role.GF:
-                            kill_target = self.agents[random.randint(0, self.num_agents - 1)]
+
+                    if distract_target.role != Role.GF:
                         agent.kill(kill_target)
                         visitations[kill_target.name].append(agent)
 
@@ -102,6 +96,7 @@ class Game:
 
             #Vet and Doc cant be distracted
 
+        # Loop to execute actions
         for agent in self.agents:
             if agent.is_alive:
                 if agent.role == Role.Escort:
@@ -110,18 +105,21 @@ class Game:
 
                 elif agent.role == Role.Lookout:
                     # Observe a player each night
-                    # TODO: Fill in these methods with the appropriate information
-                    agent.observe(observe_target, False, [])
+                    agent.observe(observe_target,
+                                  len(visitations[observe_target.name]) > 0,
+                                  visitations[observe_target.name])
 
                 elif agent.role == Role.Doc:
                     # Heal a player each night
                     pass
 
                 elif agent.role == Role.Vet:
-                    # TODO: Change Alert Status at end of night
-                    # Choose to go active or not based on PR of dying
-                    # TODO: Implement vet night action
-                    pass
+                    # Enact Killings if Alerted
+                    agent.night_action(len(visitations[agent.name]) > 0,
+                                       visitations[agent.name])
+
+                    if agent.alert:
+                        agent.alert = False
 
                 elif agent.role == Role.GF:
                     # Kill someone every night - MVP
@@ -134,7 +132,6 @@ class Game:
                     pass
                 else:
                     print("[Error] Something has gone very wrong.")
-
     # endregion
 
     def _check_win(self):

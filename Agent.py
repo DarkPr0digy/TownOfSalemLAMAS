@@ -115,7 +115,6 @@ class Veteran(Agent):
         self.used_alert -= 1
 
     def night_action(self, is_visited, visitors):
-        # TODO: I assume they kill all visitors
         if self.alert and is_visited:
             for visitor in visitors:
                 self.register_event(self, visitor, EventType.Killed)
@@ -148,7 +147,7 @@ if __name__ == "__main__":
     X.register_event(X, Y, EventType.Voted)
     X.register_event(X, Y, EventType.Killed)
 
-    Z.observe(Y, True, [X, Z])
+    Z.observe(Y, False, [])
 
     will, _, _ = X.get_will()
     print(will)
