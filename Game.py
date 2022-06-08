@@ -33,6 +33,7 @@ class Game:
 
     # region Night Routines
     def night_routine(self, day):
+        # TODO: If vet is active and GF visits, GF should die
         """
         Night routine for the game.
         :param day: The day of the game.
