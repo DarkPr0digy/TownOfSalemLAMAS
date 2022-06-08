@@ -10,7 +10,8 @@ from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
 
 # Amount of agents in the game
-NO_OF_AGENTS = 3
+# 6 is the limit
+NO_OF_AGENTS = 5
 # Escort = 'E', Veteran = 'V', Doctor = 'D', Godfather = 'G', Lookout = 'L'
 ROLES = ['D', 'E', 'G', 'L', 'V']
 
@@ -60,19 +61,31 @@ def create_starting_relations(relations_dict, worlds, roles):
         relations_dict[str(x)] = relations
 
 
-def do_simulation():
+def do_simulation(agents=None):
+    if agents is None:
+        agents = []
     won = False
+    dead_agents = []
     while not won:
-        x = 0
         # Night -----------
-        # Agents can perform their ability
-        # Do abilities
-        # Give knowledge to agents
-        # Decide which agents died
+        # Do abilities + give knowledge from abilities
+        for agent in agents:
+            agent.ability()
+        # Decide which agents died and add them to a list
+        dead_agents.append(None)
 
         # Day -------------
         # Show which agents died
         # Did any faction win?
+        while not len(dead_agents) == 0:
+            dead_agent = dead_agents.pop()
+            name = dead_agent.name
+            role = dead_agent.role
+            last_will = dead_agent.last_will
+            for agent in agents:
+                agent.add_knowledge(name + 'dead')
+                agent.add_knowledge(name + role)
+                agent.add_knowledge(last_will)
         # Give agents knowledge of the role of the dead agent
         # Give agents knowledge of the last will of te dead agent (public announcement)
         # Remove worlds where the dead agent does not have the role that was shown (public announcement)
@@ -116,8 +129,8 @@ def main():
     # In world 2, for agent 1, 1D is true in every reachable world, because
     # agent 1 can reach world 1 and world 2 from world 2, thus we have
     # (ks,w2) |= K_1 1D, thus the formula is true
-    formula = Diamond(Atom('1D'))
-    print(formula.semantic(ks, '2'))
+    formula = Implies(Diamond(Atom('2E')),Atom('1D')) # M_1 2E ^ 1D
+    print(formula.semantic(ks, '1'))
 
     print("Accessibility relations for agent 1:")
     print(relations_dict['1'])
