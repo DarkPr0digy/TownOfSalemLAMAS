@@ -41,10 +41,10 @@ class Agent:
 
         return self.will, self.role, self.events
 
-    def register_event(self, agent, target, event_type: EventType):
-        self.events.append(Event(event_type, agent.name, target.name))
+    def register_event(self, agent, target, event_type: EventType, day: int):
+        self.events.append(Event(event_type, agent.name, target.name, day))
 
-    def vote(self, target, num_votes=1):
+    def vote(self, target, day, num_votes=1):
         # TODO: I assume mayor can only use their votes on 1 person even if they have 3
         # TODO: Should also return something
         self.register_event(self, target, EventType.Voted)
@@ -56,12 +56,12 @@ class Lookout(Agent):
         self.name = name
         super().__init__(Role.LO, name)
 
-    def observe(self, target, someone_visited: bool, who_visited: [Agent]):
-        self.register_event(self, target, EventType.Observed)
+    def observe(self, target, someone_visited: bool, who_visited: [Agent], day):
+        self.register_event(self, target, EventType.Observed, day)
 
         if someone_visited:
             for agent in who_visited:
-                self.register_event(agent, target, EventType.Visited)
+                self.register_event(agent, target, EventType.Visited, day)
 
 
 class Doctor(Agent):
@@ -69,26 +69,26 @@ class Doctor(Agent):
         super().__init__(Role.Doc, name)
         self.used_self_heal = False
 
-    def heal(self, target):
+    def heal(self, target, day):
         if target == self:
             self.used_self_heal = True
-        self.register_event(self, target, EventType.Healed)
+        self.register_event(self, target, EventType.Healed, day)
 
 
 class Escort(Agent):
     def __init__(self, name):
         super().__init__(Role.Esc, name)
 
-    def distract(self, target):
-        self.register_event(self, target, EventType.Distracted)
+    def distract(self, target, day):
+        self.register_event(self, target, EventType.Distracted, day)
 
 
 class Godfather(Agent):
     def __init__(self, name):
         super().__init__(Role.GF, name)
 
-    def kill(self, target):
-        self.register_event(self, target, EventType.Killed)
+    def kill(self, target, day):
+        self.register_event(self, target, EventType.Killed, day)
         target.death()
 
 
@@ -100,10 +100,10 @@ class Mayor(Agent):
     def reveal_self(self):
         self.is_revealed = True
 
-    def vote(self, target, num_votes=1):
+    def vote(self, target, day, num_votes=1):
         # TODO: I assume mayor can only use their votes on 1 person even if they have 3
         # TODO: Should also return something
-        self.register_event(self, target, EventType.Voted)
+        self.register_event(self, target, EventType.Voted, day)
 
 
 class Veteran(Agent):
@@ -116,10 +116,10 @@ class Veteran(Agent):
         self.alert = True
         self.used_alert -= 1
 
-    def night_action(self, is_visited, visitors):
+    def night_action(self, is_visited, visitors, day):
         if self.alert and is_visited:
             for visitor in visitors:
-                self.register_event(self, visitor, EventType.Killed)
+                self.register_event(self, visitor, EventType.Killed, day)
                 visitor.death()
 
 
@@ -127,8 +127,8 @@ class Vigilante(Agent):
     def __init__(self, name):
         super().__init__(Role.Vig, name)
 
-    def kill(self, target):
-        self.register_event(self, target, EventType.Killed)
+    def kill(self, target, day):
+        self.register_event(self, target, EventType.Killed, day)
         target.death()
 
 
@@ -145,11 +145,11 @@ if __name__ == "__main__":
     Y = Mayor("Adam West")
     Z = Lookout(name="Snitch McSnitch")
 
-    X.register_event(X, Y, EventType.Distracted)
-    X.register_event(X, Y, EventType.Voted)
-    X.register_event(X, Y, EventType.Killed)
+    X.register_event(X, Y, EventType.Distracted, 1)
+    X.register_event(X, Y, EventType.Voted, 1)
+    X.register_event(X, Y, EventType.Killed, 1)
 
-    Z.observe(Y, False, [])
+    Z.observe(Y, False, [], 1)
 
     will, _, _ = X.get_will()
     print(will)

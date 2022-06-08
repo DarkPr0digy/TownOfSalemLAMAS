@@ -32,8 +32,7 @@ class Game:
     # endregion
 
     # region Night Routines
-    def night_routine(self):
-        # TODO: Account for days in loop for will
+    def night_routine(self, day):
         visitations = {}
         distract_target = None
         heal_target = None
@@ -51,7 +50,7 @@ class Game:
                     distract_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while distract_target.role == Role.Esc or distract_target.is_alive is False:
                         distract_target = self.agents[random.randint(0, self.num_agents - 1)]
-                    agent.distract(distract_target)
+                    agent.distract(distract_target, day)
                     visitations[distract_target.name].append(agent)
 
                 elif agent.role == Role.LO:
@@ -68,7 +67,7 @@ class Game:
                             heal_target = self.agents[random.randint(0, self.num_agents - 1)]
                     except AttributeError:
                         pass
-                    agent.heal(heal_target)
+                    agent.heal(heal_target, day)
                     heal_target.is_being_healed = True
                     visitations[heal_target.name].append(agent)
 
@@ -111,7 +110,8 @@ class Game:
                     # Observe a player each night
                     agent.observe(observe_target,
                                   len(visitations[observe_target.name]) > 0,
-                                  visitations[observe_target.name])
+                                  visitations[observe_target.name],
+                                  day)
 
                 elif agent.role == Role.Doc:
                     # Heal a player each night
@@ -120,7 +120,8 @@ class Game:
                 elif agent.role == Role.Vet:
                     # Enact Killings if Alerted
                     agent.night_action(len(visitations[agent.name]) > 0,
-                                       visitations[agent.name])
+                                       visitations[agent.name],
+                                       day)
 
                     if agent.alert:
                         agent.alert = False
@@ -128,11 +129,11 @@ class Game:
                 elif agent.role == Role.GF:
                     # Kill someone every night - MVP
                     if distract_target is None:
-                        agent.kill(kill_target)
+                        agent.kill(kill_target, day)
                         visitations[kill_target.name].append(agent)
                     else:
                         if distract_target.role != Role.GF:
-                            agent.kill(kill_target)
+                            agent.kill(kill_target, day)
                             visitations[kill_target.name].append(agent)
 
                 # Skip for now
@@ -174,17 +175,21 @@ class Game:
 
 if __name__ == "__main__":
     game = Game(5)
+    day_counter = 1
     while not game._check_win():
         print("==================\nDay Time\n==================")
         for agents in game.agents:
             print(agents.name + ": " + str(agents.role) + " `is alive` is" + str(agents.is_alive))
 
-        game.night_routine()
+        game.night_routine(day=day_counter)
         print("==================\nNight Time\n==================")
 
         for agents in game.agents:
             print(agents.name + ": " + str(agents.role) + " `is alive` is" + str(agents.is_alive))
 
+        day_counter += 1
+
+    print("\n=======================Game Over=======================\n")
     for agents in game.agents:
         if not agents.is_alive:
             will, _, _ = agents.get_will()

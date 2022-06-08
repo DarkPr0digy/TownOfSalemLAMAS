@@ -14,10 +14,11 @@ class EventType(Enum):
 
 
 class Event:
-    def __init__(self, event_type: EventType, agent: str, target: str):
+    def __init__(self, event_type: EventType, agent: str, target: str, day: int):
         self.event_type = event_type
         self.agent = agent
         self.target = target
+        self.day = day
 
     def __str__(self):
-        return self.agent + " " + str(self.event_type.name) + " " + self.target
+        return self.agent + " " + str(self.event_type.name) + " " + self.target + " on day " + str(self.day)
