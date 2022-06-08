@@ -33,6 +33,11 @@ class Game:
 
     # region Night Routines
     def night_routine(self, day):
+        """
+        Night routine for the game.
+        :param day: The day of the game.
+        """
+        # Reset variables
         visitations = {}
         distract_target = None
         heal_target = None
@@ -42,7 +47,7 @@ class Game:
         for agent in self.agents:
             visitations[agent.name] = []
 
-        # Loop to decide actions
+        # Loop to decide actions and targets
         for agent in self.agents:
             if agent.is_alive:
                 if agent.role == Role.Esc:
