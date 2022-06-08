@@ -33,6 +33,7 @@ class Game:
 
     # region Night Routines
     def night_routine(self):
+        # TODO: Account for days in loop for will
         visitations = {}
         distract_target = None
         heal_target = None
@@ -68,12 +69,15 @@ class Game:
                     except AttributeError:
                         pass
                     agent.heal(heal_target)
+                    heal_target.is_being_healed = True
                     visitations[heal_target.name].append(agent)
 
                 elif agent.role == Role.Vet:
                     # Choose to go active or not based on PR of dying
-                    if random.random() < (1/self.living_agents - 1):
+                    alert_prob = random.random()
+                    if alert_prob < 1/(self.living_agents - 1):
                         if agent.used_alert >= 1:
+                            print("[INFO] Vet Is Going Active")
                             agent.change_alert()
 
                 elif agent.role == Role.GF:
@@ -81,15 +85,6 @@ class Game:
                     kill_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while kill_target.role == Role.GF or kill_target.is_alive is False:
                         kill_target = self.agents[random.randint(0, self.num_agents - 1)]
-
-                    if distract_target is None:
-                        agent.kill(kill_target)
-                        visitations[kill_target.name].append(agent)
-                    else:
-                        if distract_target.role != Role.GF:
-                            agent.kill(kill_target)
-                            visitations[kill_target.name].append(agent)
-
 
                 # Skip for now
                 elif agent.role == Role.May:
@@ -132,7 +127,13 @@ class Game:
 
                 elif agent.role == Role.GF:
                     # Kill someone every night - MVP
-                    pass
+                    if distract_target is None:
+                        agent.kill(kill_target)
+                        visitations[kill_target.name].append(agent)
+                    else:
+                        if distract_target.role != Role.GF:
+                            agent.kill(kill_target)
+                            visitations[kill_target.name].append(agent)
 
                 # Skip for now
                 elif agent.role == Role.May:
@@ -141,6 +142,13 @@ class Game:
                     pass
                 else:
                     print("[Error] Something has gone very wrong.")
+
+        # Count Living Agents
+        self.living_agents = 0
+        for agent in self.agents:
+            agent.is_being_healed = False
+            if agent.is_alive:
+                self.living_agents += 1
     # endregion
 
     def _check_win(self):
