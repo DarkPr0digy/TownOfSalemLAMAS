@@ -4,9 +4,7 @@ import random
 
 
 class Game:
-    def __init__(self, num_agents: int):
-        self.num_agents = num_agents
-        self.living_agents = num_agents
+    def __init__(self):
         self.num_days = 0
         self.is_over = False
         self.winner = None
@@ -15,9 +13,13 @@ class Game:
         self.agents = []
         self.agents.append(Veteran("A1"))
         self.agents.append(Doctor("A2"))
-        self.agents.append(Escort("A3"))
+        # self.agents.append(Escort("A3"))
         self.agents.append(Godfather("A4"))
         self.agents.append(Lookout("A5"))
+
+        # Set the number of agents
+        self.num_agents = len(self.agents)
+        self.living_agents = self.num_agents
 
     # region Day Routines
     def day_routine(self):
@@ -34,6 +36,7 @@ class Game:
     # region Night Routines
     def night_routine(self, day):
         # TODO: If vet is active and GF visits, GF should die
+        # TODO: Fix GF visitation stuff
         """
         Night routine for the game.
         :param day: The day of the game.
@@ -180,7 +183,7 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game(5)
+    game = Game()
     day_counter = 1
     while not game._check_win():
         print("==================\nDay Time\n==================")
