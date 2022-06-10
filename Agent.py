@@ -50,7 +50,7 @@ class Agent:
         self.register_event(self, target, EventType.Voted)
 
 
-# region Individual Roles - Where their individual methods will gos
+# region Individual Roles - Where their individual methods will go
 class Lookout(Agent):
     def __init__(self, name):
         self.name = name

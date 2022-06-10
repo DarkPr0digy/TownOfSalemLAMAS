@@ -35,8 +35,6 @@ class Game:
 
     # region Night Routines
     def night_routine(self, day):
-        # TODO: If vet is active and GF visits, GF should die
-        # TODO: Fix GF visitation stuff
         """
         Night routine for the game.
         :param day: The day of the game.
@@ -67,6 +65,7 @@ class Game:
                     observe_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while observe_target.role == Role.LO or observe_target.is_alive is False:
                         observe_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    visitations[observe_target.name].append(agent)
 
                 elif agent.role == Role.Doc:
                     # Heal a player each night
@@ -93,6 +92,7 @@ class Game:
                     kill_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while kill_target.role == Role.GF or kill_target.is_alive is False:
                         kill_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    visitations[kill_target.name].append(agent)
 
                 # Skip for now
                 elif agent.role == Role.May:
