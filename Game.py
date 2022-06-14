@@ -13,7 +13,7 @@ class Game:
         self.agents = []
         self.agents.append(Veteran("A1"))
         self.agents.append(Doctor("A2"))
-        # self.agents.append(Escort("A3"))
+        self.agents.append(Escort("A3"))
         self.agents.append(Godfather("A4"))
         self.agents.append(Lookout("A5"))
 
@@ -139,11 +139,10 @@ class Game:
                     # Kill someone every night - MVP
                     if distract_target is None:
                         agent.kill(kill_target, day)
-                        visitations[kill_target.name].append(agent)
                     else:
                         if distract_target.role != Role.GF:
                             agent.kill(kill_target, day)
-                            visitations[kill_target.name].append(agent)
+
 
                 # Skip for now
                 elif agent.role == Role.May:
