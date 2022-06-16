@@ -24,6 +24,7 @@ class Agent:
         self.is_alive = True
         self.knowledge = {name + "_" + str(role.name): True}
         self.is_being_healed = False
+        self.relations = []
 
     def __str__(self):
         return str(self.role.name) + ": " + str(self.name)

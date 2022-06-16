@@ -1,5 +1,6 @@
 from Agent import *
 from Event import *
+from Worlds import *
 import random
 
 
@@ -10,14 +11,15 @@ class Game:
         self.num_days = 0
         self.is_over = False
         self.winner = None
+        self.roles = ["Vet", "Doc", "Esc", "LO", "GF"]
 
         # Create the agents
         self.agents = []
         self.agents.append(Veteran("A1"))
         self.agents.append(Doctor("A2"))
         self.agents.append(Escort("A3"))
-        self.agents.append(Godfather("A4"))
-        self.agents.append(Lookout("A5"))
+        # self.agents.append(Godfather("A4"))
+        # self.agents.append(Lookout("A5"))
 
     # region Day Routines
     def day_routine(self):
@@ -180,8 +182,13 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game(5)
+    game = Game(3)
     day_counter = 1
+    # Create a list with the possible worlds for each agent
+    worlds = Worlds(game.agents, game.roles)
+    # For each agent, create the accessibility relations
+    for agent in game.agents:
+        worlds.create_starting_relations(game.roles, agent)
     while not game._check_win():
         print("==================\nDay Time\n==================")
         for agents in game.agents:

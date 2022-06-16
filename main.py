@@ -5,13 +5,14 @@ Player 1 is Escort: '1E'
 Player 1 visited player 3 on night 2: '1v3n2'
 ((not 1v3n2) and (d3n2)) --> not 1G
 '''
+import copy
 
 from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
 
 # Amount of agents in the game
 # 6 is the limit
-NO_OF_AGENTS = 5
+NO_OF_AGENTS = 3
 # Escort = 'E', Veteran = 'V', Doctor = 'D', Godfather = 'G', Lookout = 'L'
 ROLES = ['D', 'E', 'G', 'L', 'V']
 
@@ -21,7 +22,7 @@ def create_worlds(worlds, agents, roles, dict):
     for x in range(len(agents)):
         c_agent = agents.pop(0)
         c_role = roles.pop(x)
-        dict[str(c_agent+c_role)] = True
+        dict[str(c_agent + c_role)] = True
         if bool(agents):
             worlds = create_worlds(worlds, agents, roles, dict)
         else:
@@ -36,16 +37,16 @@ def create_worlds(worlds, agents, roles, dict):
 
 # Function creates only worlds for agents 1 and 2 and not 3,
 # has to do with the names in the dictionary
-def create_starting_relations(relations_dict, worlds, roles):
+def create_starting_relations(relations_dict, worlds, roles, agents):
     # This function can be changed to make it so that you give
     # the name of the agent and it fetches the relations for that particular agent
-    for x in range(NO_OF_AGENTS):
-        relations_dict[str(x)] = {}
+    for x in range(len(agents)):
+        relations_dict[str(agents[x])] = {}
         relations = []
         for role in roles:
             connected_worlds = []
             for world in range(len(worlds)):
-                if str(x)+role in worlds[world].assignment:
+                if str(agents[x]) + role in worlds[world].assignment:
                     connected_worlds.append(world)
             # In every connected the agent has the role 'role', so there should be a relation between them
             while bool(connected_worlds):
@@ -53,12 +54,56 @@ def create_starting_relations(relations_dict, worlds, roles):
                 for z in connected_worlds:
                     # Assume reflexivity
                     relations.append((str(c_world + 1), str(c_world + 1)))
-                    relations.append((str(z+1), str(z+1)))
+                    relations.append((str(z + 1), str(z + 1)))
                     # Assume the other one
-                    relations.append((str(c_world+1), str(z+1)))
+                    relations.append((str(c_world + 1), str(z + 1)))
                     relations.append((str(z + 1), str(c_world + 1)))
                     # Add something for transitivity
-        relations_dict[str(x)] = relations
+        relations_dict[agents[x]] = relations
+
+
+def remove_relations(removed_worlds, relations_dict):
+    for agent_rels in relations_dict:
+        relations = relations_dict[agent_rels]
+        counter = 0
+        deleted_relations = []
+        for relation in relations:
+            for removed_world in removed_worlds:
+                if relation[0] == removed_world.name or relation[1] == removed_world.name:
+                    deleted_relations.append(counter)
+                    break
+            counter += 1
+        counter = 0
+        for del_rela in deleted_relations:
+            del relations[del_rela-counter]
+            counter += 1
+
+
+def remove_worlds(worlds, fact):
+    removed_worlds = []
+    for world in worlds:
+        if fact not in world.assignment:
+            removed_worlds.append(world)
+    for removed_world in removed_worlds:
+        worlds.remove(removed_world)
+    return worlds, removed_worlds
+
+
+def public_announcent(fact, worlds, relation_dict):
+    # In a public announcement, everyone knows that everyone knows that 'fact' is true, and everyone knows
+    # that everyone knows that worlds where 'fact' is false is not a feasible world, so remove all worlds
+    # where 'fact' is false and remove all relations to the removed worlds
+    worlds, removed_worlds = remove_worlds(worlds, fact)
+    remove_relations(removed_worlds, relation_dict)
+    return worlds
+
+
+def add_fact(fact, worlds, relation_dict, observer):  # Observer is an agent
+    x = 0
+    # agent x observes y visits z (yVz)
+        # if x = y, thus x visits z, same procedure, cuz x knows that x visited y
+    # for every world where x is lookout, add yVz to those worlds
+    # add relation between new and old world for all agents except the x and y
 
 
 def do_simulation(agents=None):
@@ -92,9 +137,9 @@ def do_simulation(agents=None):
         # Remove accessibility relations to the removed world
         # Update accessibility relations for each agent
         # Update possible worlds (if a world has no accessibility relations and it is not the true world, remove it,
-            # its not relevant)
+        # its not relevant)
         # Check if agent knows that all other agents know his role (K role(agent)). If this is the case and the agent is
-            # a townie, he can give information and everyone will see it as truth because townies don't lie
+        # a townie, he can give information and everyone will see it as truth because townies don't lie
         # Each agent votes if they know for sure that agent x is bad. agent x gets lynched if majority votes agent x
         # Won?
 
@@ -113,7 +158,7 @@ def main():
     # Create a list with the name of the agents:
     # list will be ['1', '2', '3'] etc for the NO_OF_AGENTS agents
     for x in range(NO_OF_AGENTS):
-        agents.append(str(x+1))
+        agents.append(str(x + 1))
 
     # Create the worlds
     dict = {}
@@ -121,7 +166,14 @@ def main():
 
     # Create the relations between worlds for every agent
     relations_dict = {}
-    create_starting_relations(relations_dict, worlds, roles)
+    create_starting_relations(relations_dict, worlds, roles, agents)
+
+    print(relations_dict['1'])
+    print(relations_dict['2'])
+    print(relations_dict['3'])
+    quit()
+
+    worlds = public_announcent('1D', worlds, relations_dict)
 
     # Kripke structure for agent 1
     ks = KripkeStructure(worlds, relations_dict['1'])
@@ -129,22 +181,19 @@ def main():
     # In world 2, for agent 1, 1D is true in every reachable world, because
     # agent 1 can reach world 1 and world 2 from world 2, thus we have
     # (ks,w2) |= K_1 1D, thus the formula is true
-    formula = Implies(Diamond(Atom('2E')),Atom('1D')) # M_1 2E ^ 1D
+    formula = Implies(Diamond(Atom('2E')), Atom('1D'))  # M_1 2E ^ 1D
     print(formula.semantic(ks, '1'))
 
     print("Accessibility relations for agent 1:")
     print(relations_dict['1'])
 
     print("All the possible worlds with their atomic propositions:")
-    print(worlds[0])
-    print(worlds[1])
-    print(worlds[2])
-    print(worlds[3])
-    print(worlds[4])
-    print(worlds[5])
+    for world in worlds:
+        print(world)
 
     # There will be NO_OF_AGENTS! amount of worlds (e.g. 5 agents = 5! = 120 worlds)
     print(len(worlds))
+
 
 if __name__ == '__main__':
     main()
