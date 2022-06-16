@@ -109,6 +109,7 @@ class Mayor(Agent):
             self.register_event(self, target, EventType.Voted, day)
         # TODO: Return num votes and target??
 
+
 class Veteran(Agent):
     def __init__(self, name):
         super().__init__(Role.Vet, name)

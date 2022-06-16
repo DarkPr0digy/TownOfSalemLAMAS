@@ -40,7 +40,6 @@ class Game:
         self.relations_dict = {}
         self._create_starting_relations(self.relations_dict, self.shared_worlds, ROLES)
 
-
     # region Day Routines
     def day_routine(self, day):
         """
@@ -49,7 +48,7 @@ class Game:
         :return:
         """
         pass
-    
+
     def _talk(self):
         """
         Method that allows the agents to talk during the day, whereby knowledge is shared.
@@ -121,7 +120,7 @@ class Game:
                             agent.change_alert()
 
                 elif agent.role == Role.GF:
-                    # Kill someone every night - MVP
+                    # Kill someone every night
                     kill_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while kill_target.role == Role.GF or kill_target.is_alive is False:
                         kill_target = self.agents[random.randint(0, self.num_agents - 1)]
@@ -191,6 +190,14 @@ class Game:
             agent.is_being_healed = False
             if agent.is_alive:
                 self.living_agents += 1
+
+        # TODO: Knowledge Updates
+        if observe_target is not None:
+            if len(visitations[observe_target.name]) == 2 and not observe_target.is_alive:
+                # TODO: Need a better way to find agents
+                visitations[observe_target.name].remove(self.agents[4])
+                mafia = visitations[observe_target.name][0]
+                self.agents[4].knowledge[mafia.name+"_"+str(mafia.role)] = True
 
     # endregion
 
