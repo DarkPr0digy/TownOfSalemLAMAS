@@ -31,6 +31,8 @@ class Game:
         self.num_agents = len(self.agents)
         self.living_agents = self.num_agents
 
+        # TODO: Personal Knowledge of Each Agent??
+
         # Shared Knowledge of Agents
         self.shared_worlds = []
         self.shared_worlds = self._create_worlds([], deepcopy(self.agents), deepcopy(ROLES), {})
