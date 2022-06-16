@@ -10,6 +10,8 @@ import random
 
 # endregion
 
+# TODO: Add a ReadM with run instructions
+
 ROLES = [Role.Vet, Role.Doc, Role.Esc, Role.GF, Role.LO]
 
 
@@ -197,7 +199,7 @@ class Game:
                 # TODO: Need a better way to find agents
                 visitations[observe_target.name].remove(self.agents[4])
                 mafia = visitations[observe_target.name][0]
-                self.agents[4].knowledge[mafia.name+"_"+str(mafia.role)] = True
+                self.agents[4].knowledge[mafia.name + "_" + str(mafia.role)] = True
 
     # endregion
 

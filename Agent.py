@@ -33,6 +33,7 @@ class Agent:
             self.is_alive = False
 
     def get_will(self):
+        # TODO: Add how they died to the will
         self.will = "Last will and Testament of " + self.name + "\n"
         self.will += "------------------------------------------------\n"
         self.will += str("I am the " + str(self.role.name) + "\n")
