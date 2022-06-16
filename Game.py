@@ -1,6 +1,10 @@
+# region Importing
 from Agent import *
 from Event import *
+from mlsolver.kripke import World, KripkeStructure
+from mlsolver.formula import *
 import random
+# endregion
 
 
 class Game:
@@ -22,13 +26,26 @@ class Game:
         self.living_agents = self.num_agents
 
     # region Day Routines
-    def day_routine(self):
+    def day_routine(self, day):
+        """
+        Day routine for the game.
+        :param day: The day of the game.
+        :return:
+        """
         pass
 
     def _talk(self):
+        """
+        Method that allows the agents to talk during the day, whereby knowledge is shared.
+        :return:
+        """
         pass
 
     def _vote(self):
+        """
+        Method that allows the agents to vote during the day. Only vote if they are confident
+        :return: Agent that has been voted out (?)
+        """
         pass
 
     # endregion
@@ -160,6 +177,7 @@ class Game:
                 self.living_agents += 1
     # endregion
 
+    # region Utility Methods
     def _check_win(self):
         """
         Checks if the game is over.
@@ -178,7 +196,12 @@ class Game:
         return num_agents_alive == 0 or num_mafia_alive == 0
 
     def _update_knowledge(self):
+        """
+        Updates the knowledge of the agents.
+        :return:
+        """
         pass
+    # endregion
 
 
 if __name__ == "__main__":
