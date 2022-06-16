@@ -1,10 +1,16 @@
 # region Importing
+from copy import deepcopy
+
 from Agent import *
+from Agent import Role
 from Event import *
 from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
 import random
+
 # endregion
+
+ROLES = [Role.Vet, Role.Doc, Role.Esc, Role.GF, Role.LO]
 
 
 class Game:
@@ -24,6 +30,14 @@ class Game:
         # Set the number of agents
         self.num_agents = len(self.agents)
         self.living_agents = self.num_agents
+
+        # Shared Knowledge of Agents
+        self.shared_worlds = []
+        self.shared_worlds = self._create_worlds([], deepcopy(self.agents), deepcopy(ROLES), {})
+
+        self.relations_dict = {}
+        self._create_starting_relations(self.relations_dict, self.shared_worlds, ROLES)
+
 
     # region Day Routines
     def day_routine(self, day):
@@ -99,7 +113,7 @@ class Game:
                 elif agent.role == Role.Vet:
                     # Choose to go active or not based on PR of dying
                     alert_prob = random.random()
-                    if alert_prob < 1/(self.living_agents - 1):
+                    if alert_prob < 1 / (self.living_agents - 1):
                         if agent.used_alert >= 1:
                             print("[INFO] Vet Is Going Active")
                             agent.change_alert()
@@ -119,11 +133,11 @@ class Game:
                 else:
                     print("[Error] Something has gone very wrong.")
 
-        print("[Night] Visitations: "+str(visitations))
-        print("[Night] Distract Target: "+str(distract_target))
-        print("[Night] Heal Target: "+str(heal_target))
-        print("[Night] Observe Target: "+str(observe_target))
-        print("[Night] Kill Target: "+str(kill_target))
+        print("[Night] Visitations: " + str(visitations))
+        print("[Night] Distract Target: " + str(distract_target))
+        print("[Night] Heal Target: " + str(heal_target))
+        print("[Night] Observe Target: " + str(observe_target))
+        print("[Night] Kill Target: " + str(kill_target))
 
         # Loop to execute actions
         for agent in self.agents:
@@ -175,6 +189,7 @@ class Game:
             agent.is_being_healed = False
             if agent.is_alive:
                 self.living_agents += 1
+
     # endregion
 
     # region Utility Methods
@@ -201,6 +216,63 @@ class Game:
         :return:
         """
         pass
+
+    def _create_worlds(self, worlds, agent_list, role_list, dict):
+        """
+        Recursive Function used to create the Kripke Worlds
+        :param agent_list: List of agents
+        :param role_list: List of roles
+        :param dict: dict to be passed through the recursive function
+        :return: List of Kripke Worlds
+        """
+        for x in range(len(agent_list)):
+            c_agent = agent_list.pop(0)
+            c_role = role_list.pop(x)
+            dict[c_agent.name + str(c_role)] = True
+            if bool(agent_list):
+                worlds = self._create_worlds(worlds, agent_list, role_list, dict)
+            else:
+                # Copy the dictionary so it does not get changed:
+                c_dict = dict.copy()
+                worlds.append(World(str(len(worlds) + 1), c_dict))
+            del dict[c_agent.name + str(c_role)]
+            agent_list.insert(0, c_agent)
+            role_list.insert(x, c_role)
+        return worlds
+
+    def _create_starting_relations(self, relations_dict, worlds, roles):
+        """
+        Creates the starting relations for the Kripke Worlds
+        :param relations_dict:
+        :param worlds:
+        :param roles:
+        :return:
+        """
+        # Function creates only worlds for agents 1 and 2 and not 3,
+        # has to do with the names in the dictionary
+        # This function can be changed to make it so that you give
+        # the name of the agent and it fetches the relations for that particular agent
+        for agent in self.agents:
+            x = agent.name
+            relations_dict[str(x)] = {}
+            relations = []
+            for role in roles:
+                connected_worlds = []
+                for world in range(len(worlds)):
+                    if str(x) + str(role) in worlds[world].assignment:
+                        connected_worlds.append(world)
+                # In every connected the agent has the role 'role', so there should be a relation between them
+                while bool(connected_worlds):
+                    c_world = connected_worlds.pop(0)
+                    for z in connected_worlds:
+                        # Assume reflexivity
+                        relations.append((str(c_world + 1), str(c_world + 1)))
+                        relations.append((str(z + 1), str(z + 1)))
+                        # Assume the other one
+                        relations.append((str(c_world + 1), str(z + 1)))
+                        relations.append((str(z + 1), str(c_world + 1)))
+                        # Add something for transitivity
+            relations_dict[str(x)] = relations
     # endregion
 
 
