@@ -49,7 +49,7 @@ class Game:
         :return:
         """
         pass
-
+    
     def _talk(self):
         """
         Method that allows the agents to talk during the day, whereby knowledge is shared.

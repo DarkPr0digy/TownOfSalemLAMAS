@@ -96,15 +96,18 @@ class Mayor(Agent):
     def __init__(self, name):
         super().__init__(Role.May, name)
         self.is_revealed = False
+        self.num_revealed_votes = 3
 
     def reveal_self(self):
         self.is_revealed = True
 
     def vote(self, target, day, num_votes=1):
-        # TODO: I assume mayor can only use their votes on 1 person even if they have 3
-        # TODO: Should also return something
-        self.register_event(self, target, EventType.Voted, day)
-
+        if self.is_revealed:
+            for i in range(self.num_revealed_votes):
+                self.register_event(self, target, EventType.Voted, day)
+        else:
+            self.register_event(self, target, EventType.Voted, day)
+        # TODO: Return num votes and target??
 
 class Veteran(Agent):
     def __init__(self, name):
