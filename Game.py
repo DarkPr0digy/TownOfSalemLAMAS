@@ -11,15 +11,15 @@ class Game:
         self.num_days = 0
         self.is_over = False
         self.winner = None
-        self.roles = ["Vet", "Doc", "Esc", "LO", "GF"]
+        self.roles = ["Vet", "Doc", "LO", "GF"]
 
         # Create the agents
         self.agents = []
         self.agents.append(Veteran("A1"))
         self.agents.append(Doctor("A2"))
-        self.agents.append(Escort("A3"))
-        # self.agents.append(Godfather("A4"))
-        # self.agents.append(Lookout("A5"))
+        # self.agents.append(Escort("A3"))
+        self.agents.append(Godfather("A4"))
+        self.agents.append(Lookout("A5"))
 
     # region Day Routines
     def day_routine(self):
@@ -182,25 +182,35 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game(3)
+    game = Game(4)
     day_counter = 1
     # Create a list with the possible worlds for each agent
     worlds = Worlds(game.agents, game.roles)
     # For each agent, create the accessibility relations
     for agent in game.agents:
         worlds.create_starting_relations(game.roles, agent)
+    worlds.create_kripke_structures()
     while not game._check_win():
         print("==================\nDay Time\n==================")
         for agents in game.agents:
             print(agents.name + ": " + str(agents.role) + " `is alive` is" + str(agents.is_alive))
 
         game.night_routine(day=day_counter)
+
         print("==================\nNight Time\n==================")
 
         for agents in game.agents:
             print(agents.name + ": " + str(agents.role) + " `is alive` is" + str(agents.is_alive))
 
         day_counter += 1
+
+        for agent in game.agents:
+            if not agent.is_alive:
+                # Reveal the role of the dead agent
+                worlds.public_announcent(worlds.axioms.get_fact_role(agent))
+                # Reveal last will
+                for fact in agent.events:
+                    worlds.public_announcent(fact)
 
     print("\n=======================Game Over=======================\n")
     for agents in game.agents:

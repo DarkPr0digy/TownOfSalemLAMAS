@@ -168,11 +168,6 @@ def main():
     relations_dict = {}
     create_starting_relations(relations_dict, worlds, roles, agents)
 
-    print(relations_dict['1'])
-    print(relations_dict['2'])
-    print(relations_dict['3'])
-    quit()
-
     worlds = public_announcent('1D', worlds, relations_dict)
 
     # Kripke structure for agent 1
@@ -182,15 +177,13 @@ def main():
     # agent 1 can reach world 1 and world 2 from world 2, thus we have
     # (ks,w2) |= K_1 1D, thus the formula is true
     formula = Implies(Diamond(Atom('2E')), Atom('1D'))  # M_1 2E ^ 1D
+    formula = Atom('3E')
     print(formula.semantic(ks, '1'))
-
-    print("Accessibility relations for agent 1:")
-    print(relations_dict['1'])
 
     print("All the possible worlds with their atomic propositions:")
     for world in worlds:
         print(world)
-
+    quit()
     # There will be NO_OF_AGENTS! amount of worlds (e.g. 5 agents = 5! = 120 worlds)
     print(len(worlds))
 
