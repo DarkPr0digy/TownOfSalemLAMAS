@@ -1,11 +1,11 @@
 from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
 
+
 class Axioms:
     def __init__(self):
         self.axioms = []
         self.facts = []
-
 
     def check_axioms(self):
         facts = []
@@ -17,7 +17,6 @@ class Axioms:
         if conflict:
             remove = True
         return remove
-
 
     def axiom_1(self, fact1, worlds, agents):
         formula = Box(Atom(fact1))
@@ -31,3 +30,7 @@ class Axioms:
             return agent.name + "_" + str(agent.role.name)
         else:
             return agent.name + "_" + str(role)
+
+    def get_facts(self, agent):
+        # TODO: Not sure this is what he meant
+        return agent.facts

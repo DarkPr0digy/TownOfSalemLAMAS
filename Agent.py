@@ -1,5 +1,5 @@
 from enum import Enum
-from Event import Event, EventType
+from Event import Event, EventType, EventTypeAtomic
 
 
 class Role(Enum):
@@ -22,7 +22,9 @@ class Agent:
         self.events = []
         self.name = name
         self.is_alive = True
-        self.knowledge = {name + "_" + str(role.name): True}
+        # self.knowledge = {name + "_" + str(role.name): True}
+        self.knowledge = []
+        self.knowledge.append(name + "_" + str(role.name))
         self.is_being_healed = False
         self.relations = []
 
@@ -43,38 +45,44 @@ class Agent:
 
         return self.will, self.role, self.events
 
+    def discover_role(self, target, role):
+        self.knowledge.append(target.name + "_" + str(role.name))
+
     def register_event(self, agent, target, event_type: EventType, day: int):
         self.events.append(Event(event_type, agent.name, target.name, day))
+        self.knowledge.append(agent.name + str(EventTypeAtomic(event_type.value).name) + target.name + "_N" + str(day))
 
     def vote(self, target, day, num_votes=1):
         # TODO: I assume mayor can only use their votes on 1 person even if they have 3
         # TODO: Should also return something
-        self.register_event(self, target, EventType.Voted)
+        self.register_event(self, target, EventType.Voted, day)
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_N"+str(day))
 
 
 # region Individual Roles - Where their individual methods will go
 class Lookout(Agent):
     def __init__(self, name):
-        self.name = name
         super().__init__(Role.LO, name)
+        self.name = name
 
     def observe(self, target, someone_visited: bool, who_visited: [Agent], day):
         self.register_event(self, target, EventType.Observed, day)
+        # TODO: Ignore that I observed them?
+        # self.knowledge[agent.name + "_" + str(EventTypeAtomic(event_type.value).name) + "_" + target.name] = True
 
         if someone_visited:
             for agent in who_visited:
                 self.register_event(agent, target, EventType.Visited, day)
+                self.knowledge.append(agent.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
 
 
 class Doctor(Agent):
     def __init__(self, name):
         super().__init__(Role.Doc, name)
-        self.used_self_heal = False
 
     def heal(self, target, day):
-        if target == self:
-            self.used_self_heal = True
         self.register_event(self, target, EventType.Healed, day)
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Healed.value).name) + target.name + "_N" + str(day))
 
 
 class Escort(Agent):
@@ -83,6 +91,7 @@ class Escort(Agent):
 
     def distract(self, target, day):
         self.register_event(self, target, EventType.Distracted, day)
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Distracted.value).name) + target.name + "_N" + str(day))
 
 
 class Godfather(Agent):
@@ -91,6 +100,7 @@ class Godfather(Agent):
 
     def kill(self, target, day):
         self.register_event(self, target, EventType.Killed, day)
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Killed.value).name) + target.name + "_N" + str(day))
         target.death()
 
 
@@ -107,8 +117,13 @@ class Mayor(Agent):
         if self.is_revealed:
             for i in range(self.num_revealed_votes):
                 self.register_event(self, target, EventType.Voted, day)
+                self.knowledge.append(
+                    self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_N" + str(day))
+
         else:
             self.register_event(self, target, EventType.Voted, day)
+            self.knowledge.append(
+                self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_N" + str(day))
         # TODO: Return num votes and target??
 
 
@@ -126,6 +141,9 @@ class Veteran(Agent):
         if self.alert and is_visited:
             for visitor in visitors:
                 self.register_event(self, visitor, EventType.Killed, day)
+                self.knowledge.append(
+                    self.name + str(EventTypeAtomic(EventType.Killed.value).name) + visitor.name + "_N" + str(day))
+
                 visitor.death()
 
 
@@ -135,6 +153,8 @@ class Vigilante(Agent):
 
     def kill(self, target, day):
         self.register_event(self, target, EventType.Killed, day)
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Killed.value).name) + target.name + "_N" + str(day))
+
         target.death()
 
 
@@ -145,11 +165,16 @@ if __name__ == "__main__":
     W = Veteran("Bobby Ross")
     V = Agent(Role.Vet, "Bobby Russo")
 
-    print(W.role.name)
-
     X = Godfather("Don Carlo")
     Y = Mayor("Adam West")
     Z = Lookout(name="Snitch McSnitch")
+
+    print(W.role.name)
+    print(X.role.value)
+    print(EventType.Killed.value)
+    print(EventTypeAtomic(EventType.Killed.value).name)
+    print(W.knowledge)
+    print(V.knowledge)
 
     X.register_event(X, Y, EventType.Distracted, 1)
     X.register_event(X, Y, EventType.Voted, 1)

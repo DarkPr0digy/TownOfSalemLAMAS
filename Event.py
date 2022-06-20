@@ -13,6 +13,18 @@ class EventType(Enum):
     Voted = 5
 
 
+class EventTypeAtomic(Enum):
+    """
+    Enum for types of events in the game
+    """
+    V = 0
+    K = 1
+    H = 2
+    D = 3
+    O = 4
+    Vtd = 5
+
+
 class Event:
     def __init__(self, event_type: EventType, agent: str, target: str, day: int):
         self.event_type = event_type
