@@ -2,7 +2,7 @@ from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
 
 
-class Axioms:
+class Axiom:
     def __init__(self):
         self.axioms = []
         self.facts = []
@@ -18,7 +18,7 @@ class Axioms:
             remove = True
         return remove
 
-    def axiom_1(self, fact, world, agent, ks):
+    def axiom_1(self, fact, agent):
         # Axiom 1: Kx Ay_r -> -Az_r
         inferred_facts = []
         # Check if fact is correct for axiom 1.
@@ -26,14 +26,13 @@ class Axioms:
         if fact[0] == 'A' and fact[2] == '_' and len(fact) == 6:
             # The fact is correct for axiom 1, so extract the role, and agent
             role = fact[3:]
-            agent_name = fact[:3]
+            agent_name = fact[:2]
         else:
             return inferred_facts
-        formula = Box(Atom(fact))
-        if formula.semantic(ks, world.name):
-            counter = 1
-            while not agent_name == counter and not agent.name == counter and counter < 5:
-                inferred_facts.append("notA"+ str(counter) + "_" + role) # notAy_r
+        for counter in range(1,5):
+            if not agent_name == 'A' + str(counter) and not \
+                    agent.name == 'A' + str(counter):
+                inferred_facts.append("notA" + str(counter) + "_" + role)  # notAy_r
         return inferred_facts
 
     def axiom_2(self, facts, world, agent, ks):
@@ -41,7 +40,7 @@ class Axioms:
         inferred_facts = []
         return inferred_facts
 
-    def axiom_3(self, facts, world, agent, ks):
+    def axiom_3(self, facts):
         # Au_LOO ^ vVx_Nn ^ wVx_Nn -> Ax_Vet
         inferred_facts = []
         if len(facts) == 3:
@@ -57,9 +56,7 @@ class Axioms:
                         w = facts[2][1]
                         x = facts[1][2]
                         if not u == v and not u == w and not v == w and x == facts[2][2]:
-                            formula = Box(And(Atom(facts[0]), And(Atom(facts[1]), Atom(facts[2]))))
-                            if not formula.semantic(ks, world.name):
-                                inferred_facts.append("A" + str(x) + "_Vet")
+                            inferred_facts.append("A" + str(x) + "_Vet")
         return inferred_facts
 
     def axiom_4(self, facts, world, agent, ks):
@@ -90,6 +87,7 @@ class Axioms:
                         while counter < 5:
                             if not counter == x and not counter == v:
                                 x = 0
+        return inferred_facts
 
     def get_fact_role(self, agent, role=None):
         if role is None:

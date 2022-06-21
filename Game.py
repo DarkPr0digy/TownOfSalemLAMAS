@@ -2,6 +2,7 @@ from Agent import *
 from Event import *
 from Worlds import *
 import random
+import itertools
 
 
 class Game:
@@ -159,7 +160,7 @@ class Game:
             if agent.is_alive:
                 self.living_agents += 1
 
-        self._update_knowledge()
+        #self._update_knowledge()
     # endregion
 
     def _check_win(self):
@@ -179,6 +180,7 @@ class Game:
 
         return num_agents_alive == 0 or num_mafia_alive == 0
 
+    # Won't be used (legacy)
     def _update_knowledge(self):
         for agent in self.agents:
             knowledgeable_agents = []
@@ -191,30 +193,35 @@ class Game:
                             knowledgeable_agents.append(kn_agent)
                     self.worlds.add_fact(fact, knowledgeable_agents)
 
+
 if __name__ == "__main__":
     game = Game(4)
     day_counter = 1
     # For each agent, create the accessibility relations
     for agent in game.agents:
         game.worlds.create_starting_relations(game.roles, agent)
+    # Create Kripke structures for each world
     game.worlds.create_kripke_structures()
     while not game._check_win():
-        print("==================\nDay Time\n==================")
+        print("==================\nNight Time\n==================")
         for agents in game.agents:
             print(agents.name + ": " + str(agents.role) + " `is alive` is" + str(agents.is_alive))
 
+        # Do night routine. Finished except for implementation of choosing
+        # action based on knowledge
         game.night_routine(day=day_counter)
 
-        print("==================\nNight Time\n==================")
+        print("==================\nDay Time\n==================")
 
-        for agents in game.agents:
-            print(agents.name + ": " + str(agents.role) + " `is alive` is" + str(agents.is_alive))
+        for agent in game.agents:
+            print(agent.name + ": " + str(agent.role) + " `is alive` is" + str(agent.is_alive))
+            agent.infer_facts()  # TODO: Should be implemented
+
+        game._vote()  # TODO: Should be implemented
 
         day_counter += 1
 
-        print("The amount of worlds before dead: %d" % len(game.worlds.worlds))
         for agent in game.agents:
-            print(agent.relations)
             if not agent.is_alive:
                 # Reveal the role of the dead agent
                 game.worlds.public_announcent(game.worlds.axioms.get_fact_role(agent))
@@ -223,16 +230,18 @@ if __name__ == "__main__":
                     game.worlds.public_announcent(fact)
 
         if len(game.worlds.worlds) == 0:
-            print("[ERROR]: Something went wrong, quitting")
+            print("[ERROR]: Something went wrong, number of worlds is 0, quitting")
             quit()
 
     print("\n=======================Game Over=======================\n")
-    for agents in game.agents:
-        for fact in agents.knowledge:
-            game.worlds.public_announcent(fact)
-        if not agents.is_alive:
-            will, _, _ = agents.get_will()
-            print(will)
+    for dead_agent in game.agents:
+        if not dead_agent.is_alive:
+            will, _, _ = dead_agent.get_will()
+            # print(will)
+            for fact in dead_agent.knowledge:
+                game.worlds.public_announcent(fact)
+        else:
+            print("Agent %s Won the game!" %dead_agent.name)
 
     print("Game ends with %d worlds left" %len(game.worlds.worlds))
     for world in game.worlds.worlds:

@@ -1,6 +1,8 @@
+import itertools
 from enum import Enum
 from Event import Event, EventType, EventTypeAtomic
 
+from TownOfSalemLAMAS.Axiom import Axiom
 
 class Role(Enum):
     """
@@ -44,6 +46,22 @@ class Agent:
             self.will += str(event) + "\n"
 
         return self.will, self.role, self.events
+
+    def add_fact(self, fact):
+        if fact not in self.knowledge:
+            self.knowledge.append(fact)
+
+    # Implement this function
+    def infer_facts(self):
+        ax = Axiom()
+        # Axiom 1 needs 1 fact only:
+        for fact in self.knowledge:
+            inf_facts = ax.axiom_1(fact, self)
+        # Axiom 3 needs 3 facts:
+        for facts in list(itertools.permutations(self.knowledge)):
+            inf_facts = ax.axiom_3(facts)
+            print(inf_facts)
+        quit()
 
     def discover_role(self, target, role):
         self.knowledge.append(target.name + "_" + str(role.name))
