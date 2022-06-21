@@ -177,7 +177,7 @@ def main():
     # agent 1 can reach world 1 and world 2 from world 2, thus we have
     # (ks,w2) |= K_1 1D, thus the formula is true
     formula = Implies(Diamond(Atom('2E')), Atom('1D'))  # M_1 2E ^ 1D
-    formula = Atom('3E')
+    formula = And(Atom('3E'),Atom('4E'))
     print(formula.semantic(ks, '1'))
 
     print("All the possible worlds with their atomic propositions:")

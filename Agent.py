@@ -6,11 +6,11 @@ class Role(Enum):
     """
     Enum class for the roles of the agents.
     """
-    LO = 0  # Lookout
+    LOO = 0  # Lookout
     Doc = 1  # Doc
     Vet = 2  # Veteran
     Esc = 3  # Escort
-    GF = 4  # Godfather
+    GFR = 4  # Godfather
     Vig = 5  # Vigilante
     May = 6  # Mayor
 
@@ -50,7 +50,7 @@ class Agent:
 
     def register_event(self, agent, target, event_type: EventType, day: int):
         self.events.append(Event(event_type, agent.name, target.name, day))
-        self.knowledge.append(agent.name + str(EventTypeAtomic(event_type.value).name) + target.name + "_N" + str(day))
+        #self.knowledge.append(agent.name + str(EventTypeAtomic(event_type.value).name) + target.name + "_N" + str(day))
 
     def vote(self, target, day, num_votes=1):
         # TODO: I assume mayor can only use their votes on 1 person even if they have 3
@@ -62,7 +62,7 @@ class Agent:
 # region Individual Roles - Where their individual methods will go
 class Lookout(Agent):
     def __init__(self, name):
-        super().__init__(Role.LO, name)
+        super().__init__(Role.LOO, name)
         self.name = name
 
     def observe(self, target, someone_visited: bool, who_visited: [Agent], day):
@@ -82,7 +82,7 @@ class Doctor(Agent):
 
     def heal(self, target, day):
         self.register_event(self, target, EventType.Healed, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Healed.value).name) + target.name + "_N" + str(day))
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
 
 
 class Escort(Agent):
@@ -96,11 +96,11 @@ class Escort(Agent):
 
 class Godfather(Agent):
     def __init__(self, name):
-        super().__init__(Role.GF, name)
+        super().__init__(Role.GFR, name)
 
     def kill(self, target, day):
         self.register_event(self, target, EventType.Killed, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Killed.value).name) + target.name + "_N" + str(day))
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
         target.death()
 
 

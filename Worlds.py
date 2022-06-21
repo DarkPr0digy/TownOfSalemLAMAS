@@ -3,6 +3,7 @@ from mlsolver.formula import *
 
 from TownOfSalemLAMAS.Axioms import Axioms
 
+import copy
 
 class Worlds:
     def __init__(self, agents, roles):
@@ -23,7 +24,7 @@ class Worlds:
                 worlds = self.create_worlds(worlds, knowledge_dict, agents, roles)
             else:
                 # Copy the dictionary so it does not get changed:
-                c_dict = knowledge_dict.copy()
+                c_dict = copy.deepcopy(knowledge_dict)
                 worlds.append(World(str(len(worlds) + 1), c_dict))
             del knowledge_dict[self.axioms.get_fact_role(agent, role)]
             agents.insert(0, agent)
@@ -94,48 +95,74 @@ class Worlds:
             worlds.remove(removed_world)
         return removed_worlds
 
-    def remove_conflicting_worlds(self, test_worlds, fact):
+    def remove_conflicting_worlds(self, test_worlds, fact, copied_worlds):
         new_worlds = []
+        c_worlds = []
+        counter = 0
         for world in test_worlds:
             # Infer all facts with axioms
             if self.check_conflict(world, fact):
+                c_worlds.append(copied_worlds[counter])
                 new_worlds.append(world)
-        return new_worlds
+            counter += 1
+        return new_worlds, c_worlds
+
+    def check_fact_exist(self, fact):
+        check = 0
+        for world in self.worlds:
+            if fact in world.assignment:
+                check = 1
+        if check == 1:
+            return True
+        else:
+            return False
 
     def check_conflict(self, world, fact):
         # If the fact is Ax_r but it is false in the world assignment, conflict
-        if fact[0] == 'A':
+        if fact[0] == 'A' and len(fact) == 6:
             if not fact in world.assignment:
                 return False
+        # If the fact is AxVAy_Nn but x is veteran -> conflict
+        if fact[2] == 'V' and len(fact) == 8:
+            if fact[:2] + '_Vet' in world.assignment:
+                return False
         # This if it for now
-        else:
-            return True
+        return True
 
     # Implement function remove conflicting worlds
-    def add_fact(self, fact, knowledgable_agents):
+    def add_fact(self, fact, knowledgeable_agents):
         new_worlds = []
         # Add fact
+        copied_worlds = []
         for world in self.worlds:
-            new_world = world.copy()
+            copied_worlds.append(world.name)
+            new_world = copy.deepcopy(world)
             new_world.assignment[fact] = True
             new_worlds.append(new_world)
         # Remove conflicting worlds
-        new_worlds = self.remove_conflicting_worlds(new_worlds, fact)
+        new_worlds, copied_worlds = self.remove_conflicting_worlds(new_worlds, fact, copied_worlds)
         # Which agents know the fact?
         agent_names = []
-        for agent in knowledgable_agents:
+        for agent in knowledgeable_agents:
             agent_names.append(agent.name)
+        print("The knowledgeable agents", agent_names)
+        print("The amount of worlds to be added: %d" %len(new_worlds))
+        counter = 0
         # Add new world to the worlds list
         for world in new_worlds:
+            world.name = new_world_number = len(self.worlds)
+            ogw = int(copied_worlds[counter])
+            counter =+ 1
             self.worlds.append(world)
-            new_world_number = len(self.worlds)
             for agent in self.agents:
                 if agent.name not in agent_names:
                     for relation in agent.relations:
-                        if relation[0] == new_world_number and \
-                           relation[1] == new_world_number:
-                            agent.relations.apppend((new_world_number,new_world_number))
-                        elif relation[0] == new_world_number:
+                        if int(relation[0]) == ogw and int(relation[1]) == ogw:
+                            agent.relations.append((new_world_number,new_world_number))
+                        elif int(relation[0]) == ogw:
                             agent.relations.append((relation[0],new_world_number))
-                        elif relation[1] == new_world_number:
+                        elif int(relation[1]) == ogw:
                             agent.relations.append((new_world_number,relation[1]))
+                print(agent.relations)
+                quit()
+        quit()

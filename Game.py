@@ -11,7 +11,7 @@ class Game:
         self.num_days = 0
         self.is_over = False
         self.winner = None
-        self.roles = ["Vet", "Doc", "LO", "GF"]
+        self.roles = ["Vet", "Doc", "LOO", "GFR"]
 
         # Create the agents
         self.agents = []
@@ -20,6 +20,9 @@ class Game:
         # self.agents.append(Escort("A3"))
         self.agents.append(Godfather("A4"))
         self.agents.append(Lookout("A5"))
+
+        # Create the worlds
+        self.worlds = Worlds(self.agents, self.roles)
 
     # region Day Routines
     def day_routine(self):
@@ -61,20 +64,17 @@ class Game:
                     agent.distract(distract_target, day)
                     visitations[distract_target.name].append(agent)
 
-                elif agent.role == Role.LO:
+                elif agent.role == Role.LOO:
                     # Observe a player each night
                     observe_target = self.agents[random.randint(0, self.num_agents - 1)]
-                    while observe_target.role == Role.LO or observe_target.is_alive is False:
+                    while observe_target.role == Role.LOO or observe_target.is_alive is False:
                         observe_target = self.agents[random.randint(0, self.num_agents - 1)]
 
                 elif agent.role == Role.Doc:
                     # Heal a player each night
                     heal_target = self.agents[random.randint(0, self.num_agents - 1)]
-                    try:
-                        while heal_target.used_self_heal or heal_target.is_alive is False:
-                            heal_target = self.agents[random.randint(0, self.num_agents - 1)]
-                    except AttributeError:
-                        pass
+                    while heal_target.role == Role.Doc or heal_target.is_alive is False:
+                        heal_target = self.agents[random.randint(0, self.num_agents - 1)]
                     agent.heal(heal_target, day)
                     heal_target.is_being_healed = True
                     visitations[heal_target.name].append(agent)
@@ -87,10 +87,10 @@ class Game:
                             print("[INFO] Vet Is Going Active")
                             agent.change_alert()
 
-                elif agent.role == Role.GF:
+                elif agent.role == Role.GFR:
                     # Kill someone every night - MVP
                     kill_target = self.agents[random.randint(0, self.num_agents - 1)]
-                    while kill_target.role == Role.GF or kill_target.is_alive is False:
+                    while kill_target.role == Role.GFR or kill_target.is_alive is False:
                         kill_target = self.agents[random.randint(0, self.num_agents - 1)]
 
                 # Skip for now
@@ -114,7 +114,7 @@ class Game:
                     # Distract someone every night
                     pass
 
-                elif agent.role == Role.LO:
+                elif agent.role == Role.LOO:
                     # Observe a player each night
                     agent.observe(observe_target,
                                   len(visitations[observe_target.name]) > 0,
@@ -134,13 +134,13 @@ class Game:
                     if agent.alert:
                         agent.alert = False
 
-                elif agent.role == Role.GF:
+                elif agent.role == Role.GFR:
                     # Kill someone every night - MVP
                     if distract_target is None:
                         agent.kill(kill_target, day)
                         visitations[kill_target.name].append(agent)
                     else:
-                        if distract_target.role != Role.GF:
+                        if distract_target.role != Role.GFR:
                             agent.kill(kill_target, day)
                             visitations[kill_target.name].append(agent)
 
@@ -158,6 +158,8 @@ class Game:
             agent.is_being_healed = False
             if agent.is_alive:
                 self.living_agents += 1
+
+        self._update_knowledge()
     # endregion
 
     def _check_win(self):
@@ -170,7 +172,7 @@ class Game:
 
         for agents in self.agents:
             if agents.is_alive:
-                if agents.role == Role.GF:
+                if agents.role == Role.GFR:
                     num_mafia_alive += 1
                 else:
                     num_agents_alive += 1
@@ -178,18 +180,24 @@ class Game:
         return num_agents_alive == 0 or num_mafia_alive == 0
 
     def _update_knowledge(self):
-        pass
-
+        for agent in self.agents:
+            knowledgeable_agents = []
+            for fact in agent.knowledge:
+                if not self.worlds.check_fact_exist(fact):
+                    knowledgeable_agents.append(agent)
+                    for kn_agent in self.agents:
+                        if kn_agent.name == fact[:2] and \
+                                not kn_agent.name == agent.name:
+                            knowledgeable_agents.append(kn_agent)
+                    self.worlds.add_fact(fact, knowledgeable_agents)
 
 if __name__ == "__main__":
     game = Game(4)
     day_counter = 1
-    # Create a list with the possible worlds for each agent
-    worlds = Worlds(game.agents, game.roles)
     # For each agent, create the accessibility relations
     for agent in game.agents:
-        worlds.create_starting_relations(game.roles, agent)
-    worlds.create_kripke_structures()
+        game.worlds.create_starting_relations(game.roles, agent)
+    game.worlds.create_kripke_structures()
     while not game._check_win():
         print("==================\nDay Time\n==================")
         for agents in game.agents:
@@ -204,16 +212,28 @@ if __name__ == "__main__":
 
         day_counter += 1
 
+        print("The amount of worlds before dead: %d" % len(game.worlds.worlds))
         for agent in game.agents:
+            print(agent.relations)
             if not agent.is_alive:
                 # Reveal the role of the dead agent
-                worlds.public_announcent(worlds.axioms.get_fact_role(agent))
+                game.worlds.public_announcent(game.worlds.axioms.get_fact_role(agent))
                 # Reveal last will
-                for fact in agent.events:
-                    worlds.public_announcent(fact)
+                for fact in agent.knowledge:
+                    game.worlds.public_announcent(fact)
+
+        if len(game.worlds.worlds) == 0:
+            print("[ERROR]: Something went wrong, quitting")
+            quit()
 
     print("\n=======================Game Over=======================\n")
     for agents in game.agents:
+        for fact in agents.knowledge:
+            game.worlds.public_announcent(fact)
         if not agents.is_alive:
             will, _, _ = agents.get_will()
             print(will)
+
+    print("Game ends with %d worlds left" %len(game.worlds.worlds))
+    for world in game.worlds.worlds:
+        print(world.assignment)
