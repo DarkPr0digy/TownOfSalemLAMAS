@@ -5,6 +5,7 @@ from TownOfSalemLAMAS.Axiom import Axiom
 
 import copy
 
+
 class Worlds:
     def __init__(self, agents, roles):
         self.agents = agents
@@ -75,7 +76,7 @@ class Worlds:
                 counter += 1
             counter = 0
             for del_rela in deleted_relations:
-                del agent.relations[del_rela-counter]
+                del agent.relations[del_rela - counter]
                 counter += 1
 
     def public_announcent(self, fact):
@@ -110,6 +111,26 @@ class Worlds:
         for removed_world in removed_worlds:
             self.worlds.remove(removed_world)
         return removed_worlds
+
+    def remove_redundant_worlds(self):
+        print(len(self.worlds))
+        check = 1
+        removed_worlds = []
+        for world in self.worlds:
+            for agent in self.agents:
+                check = 0
+                for rel in agent.relations:
+                    if rel[0] == world.name or rel[1] == world.name:
+                        check = 1
+                        break
+                if check == 1:
+                    break
+            if check == 0:
+                removed_worlds.append(world)
+        for removed_world in removed_worlds:
+            self.worlds.remove(removed_world)
+        print(len(self.worlds))
+
 
     def remove_conflicting_worlds(self, test_worlds, fact, copied_worlds):
         new_worlds = []
@@ -174,14 +195,16 @@ class Worlds:
         for world in new_worlds:
             world.name = new_world_number = len(self.worlds)
             ogw = int(copied_worlds[counter])
-            counter =+ 1
+            counter += 1
             self.worlds.append(world)
             for agent in self.agents:
                 if agent.name not in agent_names:
+                    copied_relations = copy.deepcopy(agent.relations)
                     for relation in agent.relations:
                         if int(relation[0]) == ogw and int(relation[1]) == ogw:
-                            agent.relations.append((new_world_number,new_world_number))
+                            copied_relations.append((new_world_number, new_world_number))
                         elif int(relation[0]) == ogw:
-                            agent.relations.append((relation[0],new_world_number))
+                            copied_relations.append((relation[0], new_world_number))
                         elif int(relation[1]) == ogw:
-                            agent.relations.append((new_world_number,relation[1]))
+                            copied_relations.append((new_world_number, relation[1]))
+                    agent.relations = copied_relations

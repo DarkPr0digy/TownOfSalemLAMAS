@@ -160,7 +160,7 @@ class Game:
             if agent.is_alive:
                 self.living_agents += 1
 
-        #self._update_knowledge()
+        # self._update_knowledge()
     # endregion
 
     def _check_win(self):
@@ -183,15 +183,17 @@ class Game:
     # Won't be used (legacy)
     def _update_knowledge(self):
         for agent in self.agents:
+            print(agent.name)
             knowledgeable_agents = []
             for fact in agent.knowledge:
                 if not self.worlds.check_fact_exist(fact):
+                    print(fact)
                     knowledgeable_agents.append(agent)
                     for kn_agent in self.agents:
                         if kn_agent.name == fact[:2] and \
                                 not kn_agent.name == agent.name:
                             knowledgeable_agents.append(kn_agent)
-                    self.worlds.add_fact(fact, knowledgeable_agents)
+                    self.worlds.add_fact_legacy(fact, knowledgeable_agents)
 
 
 if __name__ == "__main__":
@@ -215,7 +217,9 @@ if __name__ == "__main__":
 
         for agent in game.agents:
             print(agent.name + ": " + str(agent.role) + " `is alive` is" + str(agent.is_alive))
-            agent.infer_facts()  # TODO: Should be implemented
+            agent.infer_facts()  # Add more axioms for the game
+            agent.update_relations(game.worlds.worlds)
+            game.worlds.remove_redundant_worlds()
 
         game._vote()  # TODO: Should be implemented
 

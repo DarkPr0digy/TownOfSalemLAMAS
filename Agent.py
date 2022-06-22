@@ -54,14 +54,59 @@ class Agent:
     # Implement this function
     def infer_facts(self):
         ax = Axiom()
-        # Axiom 1 needs 1 fact only:
-        for fact in self.knowledge:
-            inf_facts = ax.axiom_1(fact, self)
-        # Axiom 3 needs 3 facts:
-        for facts in list(itertools.permutations(self.knowledge)):
-            inf_facts = ax.axiom_3(facts)
-            print(inf_facts)
-        quit()
+        information_gained = True
+        max_iterations = 0
+        while information_gained:
+            inf_facts = []
+            # Axiom 1: needs 1 fact only:
+            # for fact in self.knowledge:
+                # for f in ax.axiom_1(fact, self):
+                    # inf_facts.append(f)
+
+            if self.role.name == 'LOO':
+                # Axiom 3: needs 3 facts:
+                for facts in list(itertools.permutations(self.knowledge, 3)):
+                    for f in ax.axiom_3(facts):
+                        inf_facts.append(f)
+
+                # Axiom 4: needs 3 facts
+                for facts in list(itertools.permutations(self.knowledge, 2)):
+                    for f in ax.axiom_4(facts, self.knowledge):
+                        inf_facts.append(f)
+
+            # Axiom 5: needs 2 facts bla bla
+
+            # Check if no facts are added or max iterations reaches 10
+            if len(inf_facts) == 0 and max_iterations < 10:
+                information_gained = False
+            else:
+                max_iterations += 1
+                for fact in inf_facts:
+                    self.knowledge.append(fact)
+
+    def update_relations(self, worlds):
+        ax = Axiom()
+        accessible_worlds = []
+        removed_worlds = []
+        for rel in self.relations:
+            if rel[0] not in accessible_worlds:
+                accessible_worlds.append(rel[0])
+            if rel[1] not in accessible_worlds:
+                accessible_worlds.append(rel[1])
+        for world in worlds:
+            if world.name in accessible_worlds:
+                for fact in self.knowledge:
+                    if ax.check_fact_is_role(fact):
+                        if fact not in world.assignment and world.name not in removed_worlds:
+                            removed_worlds.append(world.name)
+        for world in removed_worlds:
+            accessible_worlds.remove(str(world))
+        removed_relations = []
+        for rel in self.relations:
+            if rel[0] not in accessible_worlds or rel[1] not in accessible_worlds:
+                removed_relations.append(rel)
+        for relation in removed_relations:
+            self.relations.remove(relation)
 
     def discover_role(self, target, role):
         self.knowledge.append(target.name + "_" + str(role.name))

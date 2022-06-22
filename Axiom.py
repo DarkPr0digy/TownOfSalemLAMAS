@@ -56,38 +56,55 @@ class Axiom:
                         w = facts[2][1]
                         x = facts[1][2]
                         if not u == v and not u == w and not v == w and x == facts[2][2]:
-                            inferred_facts.append("A" + str(x) + "_Vet")
+                            inferred_facts.append("A" + str(x) + "_Vet") # A1_Vet
         return inferred_facts
 
-    def axiom_4(self, facts, world, agent, ks):
-        # Axiom 4: vVx_Nn ^ not wVx_Nn ^ xD_Nn_GF -> Av_GFR
+    # Works for more roles as well (probably)
+    def axiom_4(self, facts, knowledge):
+        # Axiom 4: Au_LOO ^ vVx_Nn ^ xD_Nn_GF -> Av_GFR
         inferred_facts = []
         if len(facts) == 3:
             # Check if first fact has the right format
-            if facts[0][0] == 'A' and facts[0][3] == '_' and len(facts[0]) == 6 and facts[3:] == 'LOO':
+            if self.check_fact_is_role(facts[0]) and facts[0][3:] == 'LOO':
                 # Check if second fact has the right format
-                if facts[1][1] == 'V' and facts[1][3] == '_' and len(facts[1]) == 6:
+                if self.check_fact_is_visit(facts[1]):
                     # Check if third fact has the right format
-                    if facts[2][1] == 'D' and facts[2][3] == '_' and facts[2][6:] == 'GF':
+                    if facts[2][1] == 'D' and facts[2][3] == '_' and facts[2][6:] == 'GFR':
                         # Extract the relevant numbers
                         # Check if the same agent is visited
-                        if not facts[2][0] == facts[1][3]:
+                        if not facts[1][2] == facts[2][0]:
                             return inferred_facts
-                        x = facts[1][3]
+                        x = facts[1][2]
                         # Check if a different agent visits
                         if not x == facts[1][0]:
                             return inferred_facts
                         v = facts[1][0]
                         # Check if x died the same night v visited
-                        if not facts[2][5] == facts[1][6]:
+                        if not facts[2][4] == facts[1][5]:
                             return inferred_facts
                         n = facts[2][5]
                         # Check if no one else (w) visited x the same night v visited, where w != x != v
-                        counter = 1
-                        while counter < 5:
-                            if not counter == x and not counter == v:
-                                x = 0
+                        for fact in knowledge:
+                            # wVx_Nn
+                            if self.check_fact_is_visit(fact):
+                                if fact[5] == n and not fact[0] == v and fact[2] == x:
+                                    return inferred_facts
+                        # If more agents, this should be mafia instead of GFR
+                        # TODO: if roles are added, change this infer
+                        inferred_facts.append("A" + str(v) + "_GFR")
         return inferred_facts
+
+    def check_fact_is_role(self, fact):
+        if fact[0] == 'A' and fact[2] == '_' and len(fact) == 6:
+            return True
+        else:
+            return False
+
+    def check_fact_is_visit(self, fact):
+        if fact[1] == 'V' and fact[3] == '_' and len(fact) == 6:
+            return True
+        else:
+            return False
 
     def get_fact_role(self, agent, role=None):
         if role is None:
