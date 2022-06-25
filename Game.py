@@ -4,46 +4,234 @@ from Worlds import *
 import random
 import itertools
 
-
+# TODO: Implement some sort of a failsafe for the case where Escort and GFR survive till late game to prevent stuck
 class Game:
-    def __init__(self, num_agents: int):
-        self.num_agents = num_agents
-        self.living_agents = num_agents
+    # region Constructor Method
+    def __init__(self):
         self.num_days = 0
         self.is_over = False
         self.winner = None
-        self.roles = ["Vet", "Doc", "LOO", "GFR"]
+        self.roles = ["Vet", "Doc", "Esc", "LOO", "GFR"]
 
         # Create the agents
         self.agents = []
         self.agents.append(Veteran("A1"))
         self.agents.append(Doctor("A2"))
-        # self.agents.append(Escort("A3"))
+        self.agents.append(Escort("A3"))
         self.agents.append(Godfather("A4"))
         self.agents.append(Lookout("A5"))
+
+        self.num_agents = len(self.agents)
+        self.num_living_agents = self.num_agents
+
+        self.living_agents = ["A1", "A2", "A3", "A4", "A5"]
+        self.living_roles = copy.deepcopy(self.roles)
 
         # Create the worlds
         self.worlds = Worlds(self.agents, self.roles)
 
+    # endregion
+
+    # region Game Routine
+    def run_game(self):
+        """
+        One method that allows the game to be run till it reaches its completion
+        :return: Whether town wins or not
+        """
+        day_counter = 1
+
+        # Create the accessibility Relations for Each Agent
+        for agent in self.agents:
+            self.worlds.create_starting_relations(self.roles, agent)
+
+        # Create the Kripke Structure for Each World
+        self.worlds.create_kripke_structures()
+
+        # Game Loop
+        game_over, town_wins = self._check_win()
+        while not game_over:
+            print("==================Night %s==================" % str(day_counter))
+            for agent in self.agents:
+                print(agent.name + ": " + str(agent.role) + " `is alive` is" + str(agent.is_alive))
+
+            # Night Routine
+            game_over, town_wins = self.night_routine(day_counter)
+            if game_over:
+                break
+
+            print("==================Day %s==================" % str(day_counter))
+
+            # Dead agents reveal information
+            for agent in self.agents:
+                # Look only at dead agents
+                if not agent.is_alive and not agent.will_read:
+                    # Reveal their role
+                    game.worlds.public_announcent(self.worlds.axioms.get_fact_role(agent))
+
+                    # Reveal their last will
+                    for fact in agent.knowledge:
+                        self.worlds.public_announcent(fact)
+
+                    # TODO: Show Last will on UI ?
+                    print(agent.get_will())
+
+                    # TODO: Remove Agent from list of agents so that they do nto keep revealing wills?
+                    agent.will_read = True
+
+            # TODO: This is a test zone - remove later
+            ####################################################################
+            self.worlds.public_announcent("A5_LOO")
+            ####################################################################
+
+            # Update Agent knowledge
+            for agent in self.agents:
+                print(agent.name + ": " + str(agent.role) + " `is alive` is" + str(agent.is_alive))
+                agent.infer_facts()
+                agent.update_relations(self.worlds.worlds)
+                self.worlds.remove_redundant_worlds()
+
+            # Day Routine
+            game_over, town_wins = self.day_routine(day_counter)
+            if game_over:
+                break
+
+            # TODO: Failsame GFR - Esc
+            ####################################################################
+            gfr_esc_only = False
+            tmp = 0
+            for agent in self.agents:
+                if agent.is_alive and agent.role.name == "GFR":
+                    tmp += 1
+                elif agent.is_alive and agent.role.name == "Esc":
+                    tmp += 1
+
+            if tmp == len(self.living_agents):
+                gfr_esc_only = True
+                game_over = True
+                town_wins = False
+            ####################################################################
+
+            day_counter += 1
+
+        print("\n=======================Game Over=======================\n")
+        if town_wins:
+            print("[INFO] Town Wins The Game")
+        else:
+            print("[INFO] Mafia Wins The Game")
+
+        print("[INFO] Game ends with %d worlds left" % len(self.worlds.worlds))
+        for world in self.worlds.worlds:
+            print(world.assignment)
+
+        return town_wins
+    # endregion
+
     # region Day Routines
-    def day_routine(self):
-        pass
+    def day_routine(self, day):
+        """
+        The method that controls all events that occur in the day-time cycle of the game
+        :return:
+        """
+        self._talk()
+        self._vote(day)
+
+        # Check if Game over
+        game_over, town_wins = self._check_win()
+        return game_over, town_wins
 
     def _talk(self):
-        pass
+        """
+        The method that allows the agents to talk and share information based on their individual knowledge
+        :return:
+        """
+        print("[INFO] Talking\n=======================================")
+        for agent in self.agents:
+            if agent.is_alive:
+                print("Agent ", agent.name)
+                true_knowledge_about_my_role = agent.determine_other_agents_knowledge_about_me(self.agents,
+                                                                                               game.worlds.worlds)
+                my_knowledge_about_others = agent.determine_my_knowledge(game.worlds.worlds, self.living_agents,
+                                                                         self.living_roles)
+                print("True knowledge about me", true_knowledge_about_my_role)
+                print("My knowledge about others", my_knowledge_about_others)
 
-    def _vote(self):
-        pass
+                # If you know other agents know your role make public announcements
+                for key in true_knowledge_about_my_role.keys():
+                    value = true_knowledge_about_my_role[key]
+                    if value is True:
+                        print("[INFO] Enough information about me to share information")
+                        # Share Knowledge
+                        for fact in agent.knowledge:
+                            self.worlds.public_announcent(fact)
+                        break
+                    else:
+                        pass
+                        # print("[INFO] Not enough information about me to share information")
+
+        # Update Agents information after talking
+        for agent in self.agents:
+            agent.infer_facts()
+            agent.update_relations(self.worlds.worlds)
+            self.worlds.remove_redundant_worlds()
+
+    def _vote(self, day):
+        """
+        The method that allows the agents to vote based on their individual knowledge
+        :return:
+        """
+        print("[INFO] Voting\n=======================================")
+        votes = {}
+        for agent in self.agents:
+            if agent.is_alive:
+                print("Agent ", agent.name)
+                target_name = agent.determine_who_to_vote_for(self.worlds.worlds, self.living_agents, self.living_roles)
+
+                # Convert Target to Actual Agent
+                target = None
+                if target_name is not None:
+                    for search_agent in self.agents:
+                        if search_agent.name == target_name:
+                            target = search_agent
+
+                    # Vote For Target
+                    agent.vote(target, day)
+
+                # Get all targets and number of votes
+                if target is None:
+                    print("[INFO] %s is abstaining" % agent.name)
+                else:
+                    print("[INFO] %s is voting for %s" % (agent.name, target.name))
+                    if target in votes.keys():
+                        votes[target] += 1
+                    else:
+                        votes[target] = 1
+
+        # Determine Final target
+        final_target = None
+        max_votes = 0
+        for key in votes.keys():
+            if votes[key] > max_votes:
+                final_target = key
+                max_votes = votes[key]
+
+        # TODO: Determine if vote is majority (or other voting rule)
+        demoratic = 0
+        for _ in self.living_agents:
+            demoratic += 1
+
+        if not final_target is None and max_votes >= demoratic + 1 / 2:
+            print("[INFO] %s will be voted out democratically" % final_target.name)
+            final_target.death()
 
     # endregion
 
     # region Night Routines
     def night_routine(self, day):
-        # TODO: If vet is active and GF visits, GF should die
         """
         Night routine for the game.
         :param day: The day of the game.
         """
+        # TODO: Implement choosing based on first and second order knowledge
         # Reset variables
         visitations = {}
         distract_target = None
@@ -59,6 +247,9 @@ class Game:
             if agent.is_alive:
                 if agent.role == Role.Esc:
                     # Distract someone every night
+                    agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles,
+                                                          self.agents)
+                    
                     distract_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while distract_target.role == Role.Esc or distract_target.is_alive is False:
                         distract_target = self.agents[random.randint(0, self.num_agents - 1)]
@@ -70,6 +261,7 @@ class Game:
                     observe_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while observe_target.role == Role.LOO or observe_target.is_alive is False:
                         observe_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    visitations[observe_target.name].append(agent)
 
                 elif agent.role == Role.Doc:
                     # Heal a player each night
@@ -83,7 +275,7 @@ class Game:
                 elif agent.role == Role.Vet:
                     # Choose to go active or not based on PR of dying
                     alert_prob = random.random()
-                    if alert_prob < 1/(self.living_agents - 1):
+                    if alert_prob < 1 / (self.num_living_agents - 1):
                         if agent.used_alert >= 1:
                             print("[INFO] Vet Is Going Active")
                             agent.change_alert()
@@ -93,6 +285,7 @@ class Game:
                     kill_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while kill_target.role == Role.GFR or kill_target.is_alive is False:
                         kill_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    visitations[kill_target.name].append(agent)
 
                 # Skip for now
                 elif agent.role == Role.May:
@@ -102,11 +295,11 @@ class Game:
                 else:
                     print("[Error] Something has gone very wrong.")
 
-        print("[Night] Visitations: "+str(visitations))
-        print("[Night] Distract Target: "+str(distract_target))
-        print("[Night] Heal Target: "+str(heal_target))
-        print("[Night] Observe Target: "+str(observe_target))
-        print("[Night] Kill Target: "+str(kill_target))
+        print("[Night] Visitations: " + str(visitations))
+        print("[Night] Distract Target: " + str(distract_target))
+        print("[Night] Heal Target: " + str(heal_target))
+        print("[Night] Observe Target: " + str(observe_target))
+        print("[Night] Kill Target: " + str(kill_target))
 
         # Loop to execute actions
         for agent in self.agents:
@@ -148,21 +341,37 @@ class Game:
                 # Skip for now
                 elif agent.role == Role.May:
                     pass
-                elif agent.role == Role.Vigilante:
+                elif agent.role == Role.Vig:
                     pass
                 else:
                     print("[Error] Something has gone very wrong.")
 
         # Count Living Agents
-        self.living_agents = 0
+        self.num_living_agents = 0
         for agent in self.agents:
             agent.is_being_healed = False
             if agent.is_alive:
-                self.living_agents += 1
+                self.num_living_agents += 1
 
-        # self._update_knowledge()
+            # Update Living Agents and Roles
+            if agent.is_alive is False:
+                try:
+                    self.living_agents.remove(agent.name)
+                except ValueError:
+                    pass
+
+                try:
+                    self.living_roles.remove(agent.role.name)
+                except ValueError:
+                    pass
+
+        # Check if Game over
+        game_over, town_wins = self._check_win()
+        return game_over, town_wins
+
     # endregion
 
+    # region Utility Methods
     def _check_win(self):
         """
         Checks if the game is over.
@@ -173,12 +382,15 @@ class Game:
 
         for agents in self.agents:
             if agents.is_alive:
-                if agents.role == Role.GFR:
+                if agents.is_mafia:
                     num_mafia_alive += 1
                 else:
                     num_agents_alive += 1
 
-        return num_agents_alive == 0 or num_mafia_alive == 0
+        over = num_agents_alive == 0 or num_mafia_alive == 0
+        town_wins = num_mafia_alive == 0
+
+        return over, town_wins
 
     # Won't be used (legacy)
     def _update_knowledge(self):
@@ -194,10 +406,13 @@ class Game:
                                 not kn_agent.name == agent.name:
                             knowledgeable_agents.append(kn_agent)
                     self.worlds.add_fact_legacy(fact, knowledgeable_agents)
+    # endregion
 
 
 if __name__ == "__main__":
-    game = Game(4)
+    """game = Game()
+    game.run_game()
+
     day_counter = 1
     # For each agent, create the accessibility relations
     for agent in game.agents:
@@ -221,9 +436,13 @@ if __name__ == "__main__":
             agent.update_relations(game.worlds.worlds)
             game.worlds.remove_redundant_worlds()
 
-        game._vote()  # TODO: Should be implemented
-
         day_counter += 1
+
+        #############################
+        game.worlds.public_announcent("A4_GFR")
+        game.day_routine()
+        #############################
+        game._vote()  # TODO: Should be implemented
 
         for agent in game.agents:
             if not agent.is_alive:
@@ -240,13 +459,28 @@ if __name__ == "__main__":
     print("\n=======================Game Over=======================\n")
     for dead_agent in game.agents:
         if not dead_agent.is_alive:
+
             will, _, _ = dead_agent.get_will()
             # print(will)
             for fact in dead_agent.knowledge:
                 game.worlds.public_announcent(fact)
         else:
-            print("Agent %s Won the game!" %dead_agent.name)
+            print("Agent %s Won the game!" % dead_agent.name)
 
-    print("Game ends with %d worlds left" %len(game.worlds.worlds))
+    print("Game ends with %d worlds left" % len(game.worlds.worlds))
     for world in game.worlds.worlds:
-        print(world.assignment)
+        print(world.assignment)"""
+    town_wins = 0
+    mafia_wins = 0
+    for i in range(1):
+        game = Game()
+        tw = game.run_game()
+
+        if tw:
+            town_wins += 1
+        else:
+            mafia_wins += 1
+
+
+    print("Town Wins: ", town_wins)
+    print("Mafia Wins: ", mafia_wins)

@@ -1,8 +1,11 @@
 import itertools
+import random
 from enum import Enum
 from Event import Event, EventType, EventTypeAtomic
+from Worlds import *
 
-from TownOfSalemLAMAS.Axiom import Axiom
+# from TownOfSalemLAMAS.Axiom import Axiom
+from Axiom import Axiom
 
 class Role(Enum):
     """
@@ -15,6 +18,7 @@ class Role(Enum):
     GFR = 4  # Godfather
     Vig = 5  # Vigilante
     May = 6  # Mayor
+    Maf = 7 # Mafioso
 
 
 class Agent:
@@ -24,11 +28,13 @@ class Agent:
         self.events = []
         self.name = name
         self.is_alive = True
+        self.is_mafia = False
         # self.knowledge = {name + "_" + str(role.name): True}
         self.knowledge = []
         self.knowledge.append(name + "_" + str(role.name))
         self.is_being_healed = False
         self.relations = []
+        self.will_read = False
 
     def __str__(self):
         return str(self.role.name) + ": " + str(self.name)
@@ -45,7 +51,7 @@ class Agent:
         for event in self.events:
             self.will += str(event) + "\n"
 
-        return self.will, self.role, self.events
+        return self.will
 
     def add_fact(self, fact):
         if fact not in self.knowledge:
@@ -116,13 +122,146 @@ class Agent:
         #self.knowledge.append(agent.name + str(EventTypeAtomic(event_type.value).name) + target.name + "_N" + str(day))
 
     def vote(self, target, day, num_votes=1):
-        # TODO: I assume mayor can only use their votes on 1 person even if they have 3
-        # TODO: Should also return something
         self.register_event(self, target, EventType.Voted, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_N"+str(day))
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D"+str(day))
+        return target, num_votes
+
+    def determine_my_knowledge(self, worlds, living_agents, living_roles):
+        """
+        Method to determine the knowledge of the given agent regarding the role of other agents - First order knowledge
+        :param worlds: The set of worlds
+        :param living_agents: The set of living agents
+        :param living_roles: The set of living roles
+        :return: a dictionary with our knowledge of the roles of the other agents
+        """
+        # relations = {'a': {('1', '2')}, 'b': {}} - format needed
+        agents = living_agents
+        roles = living_roles
+
+        # Generate Combinations of living roles and agents
+        agent_combinations = []
+
+        for comb in itertools.product(agents, roles):
+            agent_combinations.append(comb[0] + "_" + comb[1])
+
+        agent_combinations.remove(self.name + "_" + self.role.name)
+
+        # Get agents relations
+        relations = {}
+        relations[self.name] = set(self.relations)
+
+        # See if in all worlds an agent knows this to be true
+        ks = KripkeStructure(worlds, relations)
+        results = []
+        for roles in agent_combinations:
+            if roles != self.name + "_" + self.role.name:
+                form = Box_a(self.name, Atom(roles))
+                world_results = []
+                for world in worlds:
+                    world_results.append(form.semantic(ks, world.name))
+                results.append(world_results)
+
+        for x in range(len(results)):
+            if all(results[x]):
+                results[x] = True
+            else:
+                results[x] = False
+
+        knowledge = {}
+        for possible_roles, result in zip(agent_combinations, results):
+            knowledge[possible_roles] = result
+
+        return knowledge
+
+    def determine_other_agents_knowledge_about_me(self, agents, worlds):
+        """
+        Method to determine if the other agents know a given agents role - Second Order Knowledge - do I know they know
+        :param agents: The set of agents in the game
+        :param worlds: the set of worlds in the game
+        :return: dictionary that tells whether other living agents know given agents role
+        """
+        my_true_role = self.name + "_" + self.role.name
+
+        # Get all living agents relations
+        relations = {}
+
+        for agent in agents:
+            if agent.is_alive:
+                relations[agent.name] = set(agent.relations)
+
+        # Determine whether the agents know this agents role in all worlds
+        ks = KripkeStructure(worlds, relations)
+
+        results = []
+        agents_that_know = []
+        for agent in agents:
+            if agent.is_alive and agent is not self:
+                agents_that_know.append(agent.name)
+                formula = Box_a(self.name, Box_a(agent.name, Atom(my_true_role)))
+
+                world_results = []
+                for world in worlds:
+                    world_results.append(formula.semantic(ks, world.name))
+                results.append(world_results)
+
+        for x in range(len(results)):
+            if all(results[x]):
+                results[x] = True
+            else:
+                results[x] = False
+
+        knowledge = {}
+        for agent, results in zip(agents_that_know, results):
+            knowledge[agent] = results
+
+        return knowledge
+
+    def determine_who_to_vote_for(self, worlds, living_agents, living_roles):
+        """
+        Method to determine who should be voted for
+        :param worlds: The set of worlds
+        :param living_agents: The set of living agents
+        :param living_roles: The set of living roles
+        :return: the name of the agent to vote for
+        """
+        knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
+        vote = []
+        if self.is_mafia:
+            # None is Abstain
+            for key in knowledge.keys():
+                if (key.split("_")[1] != "GFR" and key.split("_")[1] != "Maf") and knowledge[key] is True:
+                    vote.append(key)
+        else:
+            # Select Mafia if you know who they are
+            for key in knowledge.keys():
+                if (key.split("_")[1] == "GFR" or key.split("_")[1] == "Maf") and knowledge[key] is True:
+                    vote.append(key)
+
+        # Convert Vote to Actual Agent Names
+        for x in range(len(vote)):
+            vote[x] = vote[x].split("_")[0]
+
+        if len(vote) == 0:
+            return None
+        else:
+            return vote[random.randint(0, len(vote) - 1)]
+
+    def determine_who_to_use_ability_on(self, worlds, living_agents, living_roles, agents):
+        """
+        Generalized method to determine which agent the ability should be used on
+        :param worlds: the set of worlds
+        :param living_agents: the set of living agents
+        :param living_roles: the set of living roles
+        :return: The name of the agent to use ability on
+        """
+        knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
+        living = [x for x in agents if x.is_alive]
+        living.remove(self)
 
 
-# region Individual Roles - Where their individual methods will go
+
+# region Individual Roles
+#region Town
 class Lookout(Agent):
     def __init__(self, name):
         super().__init__(Role.LOO, name)
@@ -157,16 +296,6 @@ class Escort(Agent):
         self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Distracted.value).name) + target.name + "_N" + str(day))
 
 
-class Godfather(Agent):
-    def __init__(self, name):
-        super().__init__(Role.GFR, name)
-
-    def kill(self, target, day):
-        self.register_event(self, target, EventType.Killed, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
-        target.death()
-
-
 class Mayor(Agent):
     def __init__(self, name):
         super().__init__(Role.May, name)
@@ -181,13 +310,13 @@ class Mayor(Agent):
             for i in range(self.num_revealed_votes):
                 self.register_event(self, target, EventType.Voted, day)
                 self.knowledge.append(
-                    self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_N" + str(day))
-
+                    self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D" + str(day))
+                return target, self.num_revealed_votes
         else:
             self.register_event(self, target, EventType.Voted, day)
             self.knowledge.append(
-                self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_N" + str(day))
-        # TODO: Return num votes and target??
+                self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D" + str(day))
+            return target, num_votes
 
 
 class Veteran(Agent):
@@ -213,14 +342,37 @@ class Veteran(Agent):
 class Vigilante(Agent):
     def __init__(self, name):
         super().__init__(Role.Vig, name)
+        self.killed_correctly = None
 
     def kill(self, target, day):
         self.register_event(self, target, EventType.Killed, day)
         self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Killed.value).name) + target.name + "_N" + str(day))
 
         target.death()
+# endregion
+
+# region Mafia
+class Godfather(Agent):
+    def __init__(self, name):
+        super().__init__(Role.GFR, name)
+        self.is_mafia = True
+
+    def kill(self, target, day):
+        self.register_event(self, target, EventType.Killed, day)
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
+        target.death()
 
 
+class Mafioso(Agent):
+    def __init__(self, name):
+        super().__init__(Role.Maf, name)
+        self.is_mafia = True
+
+    def kill(self, target, day):
+        self.register_event(self, target, EventType.Killed, day)
+        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
+        target.death()
+# endregion
 # endregion
 
 
@@ -245,8 +397,8 @@ if __name__ == "__main__":
 
     Z.observe(Y, False, [], 1)
 
-    will, _, _ = X.get_will()
+    will= X.get_will()
     print(will)
     print("------------------------------------------------\n")
-    will, _, _ = Z.get_will()
+    will = Z.get_will()
     print(will)

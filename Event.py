@@ -22,7 +22,7 @@ class EventTypeAtomic(Enum):
     H = 2
     D = 3
     O = 4
-    Vtd = 5
+    T = 5
 
 
 class Event:

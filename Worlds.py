@@ -1,7 +1,8 @@
 from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
 
-from TownOfSalemLAMAS.Axiom import Axiom
+# from TownOfSalemLAMAS.Axiom import Axiom
+from Axiom import Axiom
 
 import copy
 
@@ -113,7 +114,6 @@ class Worlds:
         return removed_worlds
 
     def remove_redundant_worlds(self):
-        print(len(self.worlds))
         check = 1
         removed_worlds = []
         for world in self.worlds:
@@ -129,7 +129,6 @@ class Worlds:
                 removed_worlds.append(world)
         for removed_world in removed_worlds:
             self.worlds.remove(removed_world)
-        print(len(self.worlds))
 
 
     def remove_conflicting_worlds(self, test_worlds, fact, copied_worlds):
