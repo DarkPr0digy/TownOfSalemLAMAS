@@ -249,7 +249,8 @@ class Game:
                     # Distract someone every night
                     agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles,
                                                           self.agents)
-                    
+
+
                     distract_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while distract_target.role == Role.Esc or distract_target.is_alive is False:
                         distract_target = self.agents[random.randint(0, self.num_agents - 1)]
