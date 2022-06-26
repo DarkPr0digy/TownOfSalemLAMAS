@@ -7,6 +7,7 @@ from Worlds import *
 # from TownOfSalemLAMAS.Axiom import Axiom
 from Axiom import Axiom
 
+
 class Role(Enum):
     """
     Enum class for the roles of the agents.
@@ -18,7 +19,7 @@ class Role(Enum):
     GFR = 4  # Godfather
     Vig = 5  # Vigilante
     May = 6  # Mayor
-    Maf = 7 # Mafioso
+    Maf = 7  # Mafioso
 
 
 class Agent:
@@ -66,8 +67,8 @@ class Agent:
             inf_facts = []
             # Axiom 1: needs 1 fact only:
             # for fact in self.knowledge:
-                # for f in ax.axiom_1(fact, self):
-                    # inf_facts.append(f)
+            # for f in ax.axiom_1(fact, self):
+            # inf_facts.append(f)
 
             if self.role.name == 'LOO':
                 # Axiom 3: needs 3 facts:
@@ -119,11 +120,12 @@ class Agent:
 
     def register_event(self, agent, target, event_type: EventType, day: int):
         self.events.append(Event(event_type, agent.name, target.name, day))
-        #self.knowledge.append(agent.name + str(EventTypeAtomic(event_type.value).name) + target.name + "_N" + str(day))
+        # self.knowledge.append(agent.name + str(EventTypeAtomic(event_type.value).name) + target.name + "_N" + str(day))
 
     def vote(self, target, day, num_votes=1):
         self.register_event(self, target, EventType.Voted, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D"+str(day))
+        self.knowledge.append(
+            self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D" + str(day))
         return target, num_votes
 
     def determine_my_knowledge(self, worlds, living_agents, living_roles):
@@ -254,14 +256,13 @@ class Agent:
         :param living_roles: the set of living roles
         :return: The name of the agent to use ability on
         """
-        knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
         living = [x for x in agents if x.is_alive]
         living.remove(self)
-
+        return living[random.randint(0, len(living) - 1)]
 
 
 # region Individual Roles
-#region Town
+# region Town
 class Lookout(Agent):
     def __init__(self, name):
         super().__init__(Role.LOO, name)
@@ -275,7 +276,35 @@ class Lookout(Agent):
         if someone_visited:
             for agent in who_visited:
                 self.register_event(agent, target, EventType.Visited, day)
-                self.knowledge.append(agent.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
+                self.knowledge.append(
+                    agent.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
+
+    def determine_who_to_use_ability_on(self, worlds, living_agents, living_roles, agents):
+        """
+        Method to determine which agent the lookout should observed
+        :param worlds: the set of worlds
+        :param living_agents: the set of living agents
+        :param living_roles: the set of living roles
+        :return: The name of the agent to use ability on
+        """
+        knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
+        agents_to_be_watched = []
+        for keys in knowledge.keys():
+            if keys.split("_")[1] != "GFR" and keys.split("_")[1] != "Maf" and keys.split("_")[1] != "LOO":
+                # It is not a Mafia member therefore you should watch
+                agents_to_be_watched.append(keys)
+
+        target = agents_to_be_watched[random.randint(0, len(agents_to_be_watched) - 1)]
+
+        living = [x for x in agents if x.is_alive]
+        living.remove(self)
+
+        for agent in living:
+            if agent.name == target.split("_")[0]:
+                target = agent
+                break
+
+        return target
 
 
 class Doctor(Agent):
@@ -284,7 +313,35 @@ class Doctor(Agent):
 
     def heal(self, target, day):
         self.register_event(self, target, EventType.Healed, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
+        self.knowledge.append(
+            self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
+
+    def determine_who_to_use_ability_on(self, worlds, living_agents, living_roles, agents):
+        """
+        Method to determine which agent the doctor should heal
+        :param worlds: the set of worlds
+        :param living_agents: the set of living agents
+        :param living_roles: the set of living roles
+        :return: The name of the agent to use ability on
+        """
+        knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
+        agents_to_be_healed = []
+        for keys in knowledge.keys():
+            if keys.split("_")[1] != "GFR" and keys.split("_")[1] != "Maf" and keys.split("_")[1] != "Doc":
+                # It is not a Mafia member or you therefore you should heal
+                agents_to_be_healed.append(keys)
+
+        target = agents_to_be_healed[random.randint(0, len(agents_to_be_healed) - 1)]
+
+        living = [x for x in agents if x.is_alive]
+        living.remove(self)
+
+        for agent in living:
+            if agent.name == target.split("_")[0]:
+                target = agent
+                break
+
+        return target
 
 
 class Escort(Agent):
@@ -293,7 +350,39 @@ class Escort(Agent):
 
     def distract(self, target, day):
         self.register_event(self, target, EventType.Distracted, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Distracted.value).name) + target.name + "_N" + str(day))
+        self.knowledge.append(
+            self.name + str(EventTypeAtomic(EventType.Distracted.value).name) + target.name + "_N" + str(day))
+
+    def determine_who_to_use_ability_on(self, worlds, living_agents, living_roles, agents):
+        """
+        Method to determine which agent the Escort should distract
+        :param worlds: the set of worlds
+        :param living_agents: the set of living agents
+        :param living_roles: the set of living roles
+        :return: The name of the agent to use ability on
+        """
+        knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
+
+        agents_to_be_distracted = []
+        for keys in knowledge.keys():
+            if keys.split("_")[1] == "GFR" or keys.split("_")[1] == "Maf" and knowledge[keys]:
+                # It is a Mafia member therefore you should distract
+                agents_to_be_distracted.append(keys)
+
+        living = [x for x in agents if x.is_alive]
+        living.remove(self)
+
+        if len(agents_to_be_distracted) != 0:
+            target = agents_to_be_distracted[random.randint(0, len(agents_to_be_distracted) - 1)]
+
+            for agent in living:
+                if agent.name == target.split("_")[0]:
+                    target = agent
+                    break
+
+            return target
+        else:
+            return living[random.randint(0, len(living) - 1)]
 
 
 class Mayor(Agent):
@@ -346,9 +435,40 @@ class Vigilante(Agent):
 
     def kill(self, target, day):
         self.register_event(self, target, EventType.Killed, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Killed.value).name) + target.name + "_N" + str(day))
+        self.knowledge.append(
+            self.name + str(EventTypeAtomic(EventType.Killed.value).name) + target.name + "_N" + str(day))
 
         target.death()
+
+    def determine_who_to_use_ability_on(self, worlds, living_agents, living_roles, agents):
+        """
+        Method to determine which agent the Godfather should kill
+        :param worlds: the set of worlds
+        :param living_agents: the set of living agents
+        :param living_roles: the set of living roles
+        :return: The name of the agent to use ability on
+        """
+        knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
+        agents_to_target = []
+        for keys in knowledge.keys():
+            if (keys.split("_")[1] == "GFR" or keys.split("_")[1] == "Maf") and knowledge[keys]:
+                # It is a Mafia member therefore you should kill
+                agents_to_target.append(keys)
+
+        living = [x for x in agents if x.is_alive]
+        living.remove(self)
+
+        if len(agents_to_target) != 0:
+            target = agents_to_target[random.randint(0, len(agents_to_target) - 1)]
+
+            for agent in living:
+                if agent.name == target.split("_")[0]:
+                    target = agent
+                    break
+            return target
+        else:
+            return None
+
 # endregion
 
 # region Mafia
@@ -359,8 +479,39 @@ class Godfather(Agent):
 
     def kill(self, target, day):
         self.register_event(self, target, EventType.Killed, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
+        self.knowledge.append(
+            self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
         target.death()
+
+    def determine_who_to_use_ability_on(self, worlds, living_agents, living_roles, agents):
+        """
+        Method to determine which agent the lookout should observed
+        :param worlds: the set of worlds
+        :param living_agents: the set of living agents
+        :param living_roles: the set of living roles
+        :return: The name of the agent to use ability on
+        """
+        knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
+        agents_to_be_target = []
+        for keys in knowledge.keys():
+            if (keys.split("_")[1] != "GFR" or keys.split("_")[1] != "Maf") and knowledge[keys]:
+                # It is not a Mafia member therefore you should kill
+                agents_to_be_target.append(keys)
+
+        living = [x for x in agents if x.is_alive]
+        living.remove(self)
+
+        if len(agents_to_be_target) != 0:
+            target = agents_to_be_target[random.randint(0, len(agents_to_be_target) - 1)]
+
+            for agent in living:
+                if agent.name == target.split("_")[0]:
+                    target = agent
+                    break
+            return target
+        else:
+            # TODO: IF you know no civilian roles kill anyone but MAF
+            pass
 
 
 class Mafioso(Agent):
@@ -370,8 +521,11 @@ class Mafioso(Agent):
 
     def kill(self, target, day):
         self.register_event(self, target, EventType.Killed, day)
-        self.knowledge.append(self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
+        self.knowledge.append(
+            self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
         target.death()
+
+
 # endregion
 # endregion
 
@@ -397,7 +551,7 @@ if __name__ == "__main__":
 
     Z.observe(Y, False, [], 1)
 
-    will= X.get_will()
+    will = X.get_will()
     print(will)
     print("------------------------------------------------\n")
     will = Z.get_will()
