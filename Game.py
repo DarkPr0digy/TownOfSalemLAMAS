@@ -1,8 +1,11 @@
 from Agent import *
 from Event import *
 from Worlds import *
+from Axiom import Axiom
 import random
 import itertools
+
+
 
 # TODO: Implement some sort of a failsafe for the case where Escort and GFR survive till late game to prevent stuck
 class Game:
@@ -27,8 +30,10 @@ class Game:
         self.living_agents = ["A1", "A2", "A3", "A4", "A5"]
         self.living_roles = copy.deepcopy(self.roles)
 
+        self.axioms = Axiom(self.roles)
+
         # Create the worlds
-        self.worlds = Worlds(self.agents, self.roles)
+        self.worlds = Worlds(self.agents, self.roles, self.axioms)
 
     # endregion
 
@@ -46,6 +51,9 @@ class Game:
 
         # Create the Kripke Structure for Each World
         self.worlds.create_kripke_structures()
+
+        # Create an instance of the axiom class
+        axioms = Axiom(self.roles)
 
         # Game Loop
         game_over, town_wins = self._check_win()
@@ -66,7 +74,7 @@ class Game:
                 # Look only at dead agents
                 if not agent.is_alive and not agent.will_read:
                     # Reveal their role
-                    game.worlds.public_announcent(self.worlds.axioms.get_fact_role(agent))
+                    game.worlds.public_announcent(axioms.get_fact_role(agent))
 
                     # Reveal their last will
                     for fact in agent.knowledge:
@@ -86,8 +94,8 @@ class Game:
             # Update Agent knowledge
             for agent in self.agents:
                 print(agent.name + ": " + str(agent.role) + " `is alive` is" + str(agent.is_alive))
-                agent.infer_facts()
-                agent.update_relations(self.worlds.worlds)
+                agent.infer_facts(axioms)
+                agent.update_relations(self.worlds.worlds, axioms)
                 self.worlds.remove_redundant_worlds()
 
             # Day Routine
@@ -145,9 +153,10 @@ class Game:
         :return:
         """
         print("[INFO] Talking\n=======================================")
+        axioms = Axiom(self.roles)
         for agent in self.agents:
             if agent.is_alive:
-                print("Agent ", agent.name)
+                #print("Agent ", agent.name)
                 true_knowledge_about_my_role = agent.determine_other_agents_knowledge_about_me(self.agents,
                                                                                                game.worlds.worlds)
                 my_knowledge_about_others = agent.determine_my_knowledge(game.worlds.worlds, self.living_agents,
@@ -156,6 +165,7 @@ class Game:
                                                                     self.agents)
                 print("True knowledge about me", true_knowledge_about_my_role)
                 print("My knowledge about others", my_knowledge_about_others)
+
 
                 # If you know other agents know your role make public announcements
                 for key in true_knowledge_about_my_role.keys():
@@ -176,6 +186,7 @@ class Game:
                 agent.infer_facts()
                 agent.update_relations(self.worlds.worlds)
                 self.worlds.remove_redundant_worlds()
+
 
     def _vote(self, day):
         """

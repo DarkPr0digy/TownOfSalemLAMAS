@@ -1,17 +1,14 @@
 from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
 
-# from TownOfSalemLAMAS.Axiom import Axiom
-from Axiom import Axiom
-
 import copy
 
 
 class Worlds:
-    def __init__(self, agents, roles):
+    def __init__(self, agents, roles, ax):
         self.agents = agents
-        self.axioms = Axiom()
         self.knowledge_dict = {}
+        self.axioms = ax
         self.worlds = []
         self.worlds = self.create_worlds(self.worlds, self.knowledge_dict,
                                          self.agents, roles)

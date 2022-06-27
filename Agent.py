@@ -4,9 +4,6 @@ from enum import Enum
 from Event import Event, EventType, EventTypeAtomic
 from Worlds import *
 
-# from TownOfSalemLAMAS.Axiom import Axiom
-from Axiom import Axiom
-
 
 class Role(Enum):
     """
@@ -30,9 +27,12 @@ class Agent:
         self.name = name
         self.is_alive = True
         self.is_mafia = False
-        # self.knowledge = {name + "_" + str(role.name): True}
+
+        # Two seperate knowledge banks for faster execution
+        # Theoretically they can be represented in one
         self.knowledge = []
         self.neg_knowledge = []
+
         self.knowledge.append(name + "_" + str(role.name))
         self.is_being_healed = False
         self.relations = []
@@ -63,13 +63,11 @@ class Agent:
         if fact not in self.knowledge:
             self.neg_knowledge.append(fact)
 
-    def infer_facts(self):
-        ax = Axiom()
+    def infer_facts(self, ax):
         information_gained = True
         max_iterations = 0
         while information_gained:
             inf_facts = []
-
             # General axioms
             # Axiom 1: needs 1 fact only:
             for fact in self.knowledge:
@@ -79,52 +77,30 @@ class Agent:
             # Axiom 2A: needs negative facts with the same role
             if len(self.neg_knowledge) > 3:
                 facts = []
+                # For every role, check if there are 4 negative agent facts
                 for role in Role:
                     for fact in self.neg_knowledge:
                         if fact[6:] == str(role.name):
                             if fact not in facts:
                                 facts.append(fact)
+                    # If there are 4, we can infer the role of an agent
                     if len(facts) == 4:
                         for f in ax.axiom_2A(facts):
                             inf_facts.append(f)
                     facts = []
 
             # Axiom 2B: needs negative facts for the same agent
-            if len(self.neg_knowledge) > 3 and False:
-                facts = []
-                for x in range(1,6):
-                    for fact in self.neg_knowledge:
-                        if fact[4] == x:
-                            if fact not in facts:
-                                facts.append(fact)
-                    if len(facts) == 4:
-                        for f in ax.axiom_2B(facts):
-                            inf_facts.append(f)
-                    facts = []
-
-            # Axiom 2A: needs negative facts with the same role
             if len(self.neg_knowledge) > 3:
                 facts = []
-                for role in Role:
+                # For every agent, check if there are 4 negative role facts
+                for x in range(1,6):
                     for fact in self.neg_knowledge:
-                        if fact[6:] == str(role.name):
+                        if fact[4] == str(x):
                             if fact not in facts:
                                 facts.append(fact)
+                    # If there are 4, we can infer the role of the agent
                     if len(facts) == 4:
-                        for f in ax.axiom_2A(facts):
-                            inf_facts.append(f)
-                    facts = []
-
-            # Axiom 2B: needs negative facts for the same agent
-            if len(self.neg_knowledge) > 3 and False:
-                facts = []
-                for x in range(1, 6):
-                    for fact in self.neg_knowledge:
-                        if fact[4] == x:
-                            if fact not in facts:
-                                facts.append(fact)
-                    if len(facts) == 4:
-                        for f in ax.axiom_2B(facts):
+                        for f in ax.axiom_2B(facts, Role):
                             inf_facts.append(f)
                     facts = []
 
@@ -135,11 +111,14 @@ class Agent:
                         inf_facts.append(f)
 
                 # Axiom 4: needs 3 facts
-                for facts in list(itertools.permutations(self.knowledge, 2)):
+                for facts in list(itertools.permutations(self.knowledge, 3)):
                     for f in ax.axiom_4(facts, self.knowledge):
                         inf_facts.append(f)
 
-            # Axiom 5: needs 2 facts bla bla
+                # Axiom 5: needs 3 facts
+                for facts in list(itertools.permutations(self.knowledge, 3)):
+                    for f in ax.axiom_5(facts):
+                        inf_facts.append(f)
 
             for fact in inf_facts:
                 if fact not in self.knowledge or fact not in self.neg_knowledge:
@@ -160,8 +139,7 @@ class Agent:
                         self.add_fact(fact)
                 inf_facts = []
 
-    def update_relations(self, worlds):
-        ax = Axiom()
+    def update_relations(self, worlds, ax):
         accessible_worlds = []
         removed_worlds = []
         for rel in self.relations:

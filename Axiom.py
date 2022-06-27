@@ -3,9 +3,10 @@ from mlsolver.formula import *
 
 
 class Axiom:
-    def __init__(self):
+    def __init__(self, roles):
         self.axioms = []
         self.facts = []
+        self.roles = roles
 
     # Axioms 1 and 2 are axioms to be applied generally
     def axiom_1(self, fact, agent):
@@ -13,7 +14,7 @@ class Axiom:
         inferred_facts = []
         # Check if fact is correct for axiom 1.
         # It should be of the type 'Ay_rol'
-        if fact[0] == 'A' and fact[2] == '_' and len(fact) == 6:
+        if self.check_fact_is_role(fact):
             # The fact is correct for axiom 1, so extract the role, and agent
             role = fact[3:]
             agent_name = fact[:2]
@@ -45,48 +46,28 @@ class Axiom:
         return inferred_facts
 
     # If I know all that an agent does not have role a,b,c and d, we can infer it has role e
-    def axiom_2B(self, facts):
+    def axiom_2B(self, facts, Role):
         inferred_facts = []
-        agent_names = []
+        roles = []
         # Extract role
-        role = facts[0][6:]
+        agent_name = facts[0][4]
         for fact in facts:
-            if not role == fact[6:]:
+            if not agent_name == fact[4]:
                 return inferred_facts
             else:
-                agent_names.append(fact[4])
-        for x in range(1,6):
-            if str(x) not in agent_names:
-                inferred_facts.append('A' + str(x) + '_' + role)
+                roles.append(fact[6:])
+        for role in Role:
+            if role.name not in roles:
+                inferred_facts.append('A' + agent_name + '_' + role.name)
                 return inferred_facts
 
         print("ERROR: Something went wrong with axiom 2B, quitting")
         quit()
         return inferred_facts
 
-    # Axioms 3 and 4 are only for the lookout
+    # Axioms 3 and 4 and 5 are only for the lookout
     def axiom_3(self, facts):
-        # Au_LOO ^ vVx_Nn ^ wVx_Nn -> Ax_Vet
-        inferred_facts = []
-        if len(facts) == 3:
-            # Check if first fact has the right format
-            if facts[0][0] == 'A' and facts[0][3] == '_' and len(facts[0]) == 6 and facts[3:] == 'LOO':
-                # Check if second fact has the right format
-                if facts[1][1] == 'V' and facts[1][3] == '_' and len(facts[1]) == 6:
-                    # Check if third fact has the right format
-                    if facts[2][1] == 'V' and facts[2][3] == '_' and len(facts[2]) == 6:
-                        # Extract the relevant numbers
-                        u = facts[0][1]
-                        v = facts[1][0]
-                        w = facts[2][1]
-                        x = facts[1][2]
-                        if not u == v and not u == w and not v == w and x == facts[2][2]:
-                            inferred_facts.append("A" + str(x) + "_Vet") # A1_Vet
-        return inferred_facts
-
-    # Works for more roles as well (probably)
-    def axiom_4(self, facts, knowledge):
-        # Axiom 4: Au_LOO ^ vVx_Nn ^ xD_Nn_GF -> Av_GFR
+        # Au_LOO ^ AvVAx_Nn ^ AwVAx_Nn -> Ax_Vet
         inferred_facts = []
         if len(facts) == 3:
             # Check if first fact has the right format
@@ -94,29 +75,71 @@ class Axiom:
                 # Check if second fact has the right format
                 if self.check_fact_is_visit(facts[1]):
                     # Check if third fact has the right format
-                    if facts[2][1] == 'D' and facts[2][3] == '_' and facts[2][6:] == 'GFR':
+                    if self.check_fact_is_visit(facts[2]):
+                        # Extract the relevant numbers
+                        u = facts[0][1]
+                        v = facts[1][1]
+                        w = facts[2][1]
+                        x = facts[1][4]
+                        if not u == v and not u == w and not v == w and x == facts[2][4]:
+                            # The agent is either veteran or mayor, so is not LOO, DOC or GFR:
+                            inferred_facts.append("notA" + str(x) + "_LOO")
+                            inferred_facts.append("notA" + str(x) + "_Doc")
+                            inferred_facts.append("notA" + str(x) + "_GFR")
+        return inferred_facts
+
+    def axiom_4(self, facts, knowledge):
+        # Axiom 4: Au_LOO ^ AvVAx_Nn ^ xD_Nn_GFR -> Av_GFR
+        inferred_facts = []
+        if len(facts) == 3:
+            # Check if first fact has the right format
+            if self.check_fact_is_role(facts[0]) and facts[0][3:] == 'LOO':
+                # Check if second fact has the right format
+                if self.check_fact_is_visit(facts[1]):
+                    # Check if third fact has the right format
+                    if facts[2][1] == 'D' and facts[2][3] == 'N' and facts[2][6:] == 'GFR':
                         # Extract the relevant numbers
                         # Check if the same agent is visited
-                        if not facts[1][2] == facts[2][0]:
+                        if not facts[1][4] == facts[2][0]:
                             return inferred_facts
-                        x = facts[1][2]
+                        x = facts[1][4]
                         # Check if a different agent visits
-                        if not x == facts[1][0]:
+                        if x == facts[1][1]:
                             return inferred_facts
-                        v = facts[1][0]
+                        v = facts[1][1]
                         # Check if x died the same night v visited
-                        if not facts[2][4] == facts[1][5]:
+                        if not facts[2][4] == facts[1][7]:
                             return inferred_facts
-                        n = facts[2][5]
+                        n = facts[2][4]
                         # Check if no one else (w) visited x the same night v visited, where w != x != v
                         for fact in knowledge:
-                            # wVx_Nn
+                            # AwVAx_Nn
                             if self.check_fact_is_visit(fact):
-                                if fact[5] == n and not fact[0] == v and fact[2] == x:
+                                if fact[7] == n and not fact[1] == v and fact[4] == x:
                                     return inferred_facts
                         # If more mafia agents, this should be mafia instead of GFR
-                        # TODO: if roles are added, change this infer
                         inferred_facts.append("A" + str(v) + "_GFR")
+        return inferred_facts
+
+    def axiom_5(self, facts):
+        # Axiom 5: Au_LOO ^ AxVAy_Nn ^ zD_Nn_GF -> w in A for w =/= x,y,z,u
+        inferred_facts = []
+        agents = []
+        if len(facts) == 3:
+            # Check if first fact has the right format
+            if self.check_fact_is_role(facts[0]) and facts[0][3:] == 'LOO':
+                if self.check_fact_is_visit(facts[1]):
+                    if facts[2][1] == 'D' and facts[2][3] == 'N' and facts[2][6:] == 'GFR':
+                        if facts[1][7] == facts[2][4]:
+                            agents.append(facts[1][4])
+                            agents.append(facts[2][0])
+                            agents.append(facts[0][1])
+                            x = facts[1][1]
+                            if x not in agents:
+                                agents.append(x)
+                                for count in range(1,6):
+                                    if str(count) not in agents:
+                                        inferred_facts.append("A" + str(count) + "_GFR")
         return inferred_facts
 
     def check_fact_is_role(self, fact):
@@ -126,7 +149,7 @@ class Axiom:
             return False
 
     def check_fact_is_visit(self, fact):
-        if fact[1] == 'V' and fact[3] == '_' and len(fact) == 6:
+        if fact[2] == 'V' and fact[5] == '_' and len(fact) == 8:
             return True
         else:
             return False
