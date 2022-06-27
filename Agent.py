@@ -351,7 +351,6 @@ class Agent:
         :return: the name of the agent to vote for
         """
         knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
-        print(self.name, self.role, "KNOWLEDGE", knowledge)
         vote = []
         if self.is_mafia:
             # None is Abstain
@@ -368,7 +367,6 @@ class Agent:
         for x in range(len(vote)):
             vote[x] = vote[x].split("_")[0]
 
-        print(self.name, vote)
         if len(vote) == 0:
             return None
         else:

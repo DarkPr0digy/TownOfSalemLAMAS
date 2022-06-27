@@ -57,6 +57,7 @@ class Game:
         game_over, town_wins = self._check_win()
         while not game_over:
             # TODO: This is a test zone - remove later
+            # TODO: I think error is to do with inferences being made based on the knowledge
             ####################################################################
             self.worlds.public_announcent("A3_GFR")
             ####################################################################
@@ -94,10 +95,6 @@ class Game:
                 agent.infer_facts(axioms)
                 agent.update_relations(self.worlds.worlds, axioms)
                 self.worlds.remove_redundant_worlds()
-
-                print("[INFO] Game updates to %d worlds left" % len(self.worlds.worlds))
-                for world in self.worlds.worlds:
-                    print(world.assignment)
 
             # Day Routine
             game_over, town_wins = self.day_routine(day_counter)
