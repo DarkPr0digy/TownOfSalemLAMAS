@@ -152,6 +152,8 @@ class Game:
                                                                                                game.worlds.worlds)
                 my_knowledge_about_others = agent.determine_my_knowledge(game.worlds.worlds, self.living_agents,
                                                                          self.living_roles)
+                my_possible_knowledge_about_others = agent.determine_possibilities(game.worlds.worlds, self.living_agents,
+                                                                         self.living_roles, town=False)
                 print("True knowledge about me", true_knowledge_about_my_role)
                 print("My knowledge about others", my_knowledge_about_others)
 

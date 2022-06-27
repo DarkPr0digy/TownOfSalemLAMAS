@@ -128,6 +128,7 @@ class Agent:
             self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D" + str(day))
         return target, num_votes
 
+    # TODO: Consider it possible also -  making use of diamond - if they know I am not Mafia then ...
     def determine_my_knowledge(self, worlds, living_agents, living_roles):
         """
         Method to determine the knowledge of the given agent regarding the role of other agents - First order knowledge
@@ -172,6 +173,61 @@ class Agent:
         knowledge = {}
         for possible_roles, result in zip(agent_combinations, results):
             knowledge[possible_roles] = result
+
+        return knowledge
+
+    def determine_possibilities(self, worlds, living_agents, living_roles, town: bool):
+        """
+        Method to determine the knowledge of the given agent regarding the possible role of other agents
+        :param worlds: The set of worlds
+        :param living_agents: The set of living agents
+        :param living_roles: The set of living roles
+        :param town: boolean that determines if you want town or not town
+        :return: a dictionary with our knowledge of the roles of the other agents
+        """
+        # relations = {'a': {('1', '2')}, 'b': {}} - format needed
+        agents = living_agents
+        roles = living_roles
+
+        # Generate Combinations of living roles and agents
+        agent_combinations = []
+
+        for comb in itertools.product(agents, roles):
+            agent_combinations.append(comb[0] + "_" + comb[1])
+
+        agent_combinations.remove(self.name + "_" + self.role.name)
+
+        # Get agents relations
+        relations = {}
+        relations[self.name] = set(self.relations)
+
+        # See if in all worlds an agent knows this to be true
+        ks = KripkeStructure(worlds, relations)
+        results = []
+        for roles in agent_combinations:
+            if roles != self.name + "_" + self.role.name:
+                form = Diamond_a(self.name, Atom(roles))
+                world_results = []
+                for world in worlds:
+                    world_results.append(form.semantic(ks, world.name))
+                results.append(world_results)
+
+        print("Agent Combinations: ", agent_combinations)
+        for x in range(len(results)):
+            print("World Proposition (", agent_combinations[x], ") World Number", x + 1, ": ", results[x])
+
+        for x in range(len(results)):
+            if all(results[x]):
+                results[x] = True
+            else:
+                results[x] = False
+
+        knowledge = {}
+        for possible_roles, result in zip(agent_combinations, results):
+            knowledge[possible_roles] = result
+
+        print("KNOWLEDGE: ", knowledge)
+        exit()
 
         return knowledge
 
