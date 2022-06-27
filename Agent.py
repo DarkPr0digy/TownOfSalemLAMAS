@@ -282,7 +282,6 @@ class Agent:
         :return: a dictionary with our knowledge of the possible roles of the other agents
         """
         possibilities = self.determine_possibilities(worlds, living_agents, living_roles)
-        print(possibilities)
 
         could_be_mafia = []
 
@@ -415,19 +414,22 @@ class Lookout(Agent):
         knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
         agents_to_be_watched = []
         for keys in knowledge.keys():
-            if keys.split("_")[1] != "GFR" and keys.split("_")[1] != "Maf" and keys.split("_")[1] != "LOO":
+            if (keys.split("_")[1] != "GFR" or keys.split("_")[1] != "Maf") and keys.split("_")[0] != self.name and knowledge[keys]:
                 # It is not a Mafia member therefore you should watch
                 agents_to_be_watched.append(keys)
-
-        target = agents_to_be_watched[random.randint(0, len(agents_to_be_watched) - 1)]
 
         living = [x for x in agents if x.is_alive]
         living.remove(self)
 
-        for agent in living:
-            if agent.name == target.split("_")[0]:
-                target = agent
-                break
+        if len(agents_to_be_watched) > 0:
+            target = agents_to_be_watched[random.randint(0, len(agents_to_be_watched) - 1)]
+
+            for agent in living:
+                if agent.name == target.split("_")[0]:
+                    target = agent
+                    break
+        else:
+            target = living[random.randint(0, len(living) - 1)]
 
         return target
 
@@ -452,19 +454,22 @@ class Doctor(Agent):
         knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
         agents_to_be_healed = []
         for keys in knowledge.keys():
-            if keys.split("_")[1] != "GFR" and keys.split("_")[1] != "Maf" and keys.split("_")[1] != "Doc":
+            if keys.split("_")[1] != "GFR" and keys.split("_")[1] != "Maf" and keys.split("_")[0] != self.name and knowledge[keys]:
                 # It is not a Mafia member or you therefore you should heal
                 agents_to_be_healed.append(keys)
-
-        target = agents_to_be_healed[random.randint(0, len(agents_to_be_healed) - 1)]
 
         living = [x for x in agents if x.is_alive]
         living.remove(self)
 
-        for agent in living:
-            if agent.name == target.split("_")[0]:
-                target = agent
-                break
+        if len(agents_to_be_healed) > 0:
+            target = agents_to_be_healed[random.randint(0, len(agents_to_be_healed) - 1)]
+
+            for agent in living:
+                if agent.name == target.split("_")[0]:
+                    target = agent
+                    break
+        else:
+            target = living[random.randint(0, len(living) - 1)]
 
         return target
 
@@ -490,7 +495,7 @@ class Escort(Agent):
 
         agents_to_be_distracted = []
         for keys in knowledge.keys():
-            if keys.split("_")[1] == "GFR" or keys.split("_")[1] == "Maf" and knowledge[keys]:
+            if (keys.split("_")[1] == "GFR" or keys.split("_")[1] == "Maf") and keys.split("_")[0] != self.name and knowledge[keys]:
                 # It is a Mafia member therefore you should distract
                 agents_to_be_distracted.append(keys)
 
@@ -500,13 +505,16 @@ class Escort(Agent):
         if len(agents_to_be_distracted) != 0:
             target = agents_to_be_distracted[random.randint(0, len(agents_to_be_distracted) - 1)]
 
+            print(target)
             for agent in living:
                 if agent.name == target.split("_")[0]:
                     target = agent
+                    print("Here")
                     break
 
             return target
         else:
+
             return living[random.randint(0, len(living) - 1)]
 
 
@@ -619,7 +627,7 @@ class Godfather(Agent):
         knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
         agents_to_be_target = []
         for keys in knowledge.keys():
-            if (keys.split("_")[1] != "GFR" or keys.split("_")[1] != "Maf") and knowledge[keys]:
+            if (keys.split("_")[1] != "GFR" or keys.split("_")[1] != "Maf") and keys.split("_")[0] != self.name and knowledge[keys]:
                 # It is not a Mafia member therefore you should kill
                 agents_to_be_target.append(keys)
 
@@ -635,8 +643,13 @@ class Godfather(Agent):
                     break
             return target
         else:
-            # TODO: IF you know no civilian roles kill anyone but MAF
-            pass
+            # Godfather knows who Mafia is thus remove them from potential targets
+            for agent in living:
+                if agent.role.name == "Maf":
+                    living.remove(agent)
+
+            return living[random.randint(0, len(living) - 1)]
+
 
 
 class Mafioso(Agent):

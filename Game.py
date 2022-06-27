@@ -163,9 +163,9 @@ class Game:
                                                                          self.living_roles)
                 possible_mafia = agent.determine_who_could_be_mafia(game.worlds.worlds, self.living_agents, self.living_roles,
                                                                     self.agents)
-                print("True knowledge about me", true_knowledge_about_my_role)
-                print("My knowledge about others", my_knowledge_about_others)
-                print("My knowledge possible MAFIA", possible_mafia)
+                # print("True knowledge about me", true_knowledge_about_my_role)
+                # print("My knowledge about others", my_knowledge_about_others)
+                # print("My knowledge possible MAFIA", possible_mafia)
 
 
                 # If you know other agents know your role make public announcements
@@ -187,7 +187,6 @@ class Game:
                 agent.infer_facts(axioms)
                 agent.update_relations(self.worlds.worlds, axioms)
                 self.worlds.remove_redundant_worlds()
-
 
     def _vote(self, day):
         """
@@ -264,31 +263,29 @@ class Game:
                     # Distract someone every night
                     distract_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles,
                                                           self.agents)
-
-                    distract_target = self.agents[random.randint(0, self.num_agents - 1)]
-                    while distract_target.role == Role.Esc or distract_target.is_alive is False:
-                        distract_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    print("Distract Target: ", distract_target)
                     agent.distract(distract_target, day)
                     visitations[distract_target.name].append(agent)
 
                 elif agent.role == Role.LOO:
                     # Observe a player each night
-                    observe_target = self.agents[random.randint(0, self.num_agents - 1)]
-                    while observe_target.role == Role.LOO or observe_target.is_alive is False:
-                        observe_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    observe_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles,
+                                                          self.agents)
+                    print("Observe Target: ", observe_target)
                     visitations[observe_target.name].append(agent)
 
                 elif agent.role == Role.Doc:
                     # Heal a player each night
-                    heal_target = self.agents[random.randint(0, self.num_agents - 1)]
-                    while heal_target.role == Role.Doc or heal_target.is_alive is False:
-                        heal_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    heal_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles, self.agents)
+                    print("Heal Target: ", heal_target)
+
                     agent.heal(heal_target, day)
                     heal_target.is_being_healed = True
                     visitations[heal_target.name].append(agent)
 
                 elif agent.role == Role.Vet:
                     # Choose to go active or not based on PR of dying
+                    # TODO: Could be smarter?? - based on knowledge
                     alert_prob = random.random()
                     if alert_prob < 1 / (self.num_living_agents - 1):
                         if agent.used_alert >= 1:
@@ -297,9 +294,9 @@ class Game:
 
                 elif agent.role == Role.GFR:
                     # Kill someone every night - MVP
-                    kill_target = self.agents[random.randint(0, self.num_agents - 1)]
-                    while kill_target.role == Role.GFR or kill_target.is_alive is False:
-                        kill_target = self.agents[random.randint(0, self.num_agents - 1)]
+                    kill_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles, self.agents)
+
+                    print("Kill Target: ", kill_target)
                     visitations[kill_target.name].append(agent)
 
                 # Skip for now
