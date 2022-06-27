@@ -32,6 +32,7 @@ class Agent:
         self.is_mafia = False
         # self.knowledge = {name + "_" + str(role.name): True}
         self.knowledge = []
+        self.neg_knowledge = []
         self.knowledge.append(name + "_" + str(role.name))
         self.is_being_healed = False
         self.relations = []
@@ -58,17 +59,74 @@ class Agent:
         if fact not in self.knowledge:
             self.knowledge.append(fact)
 
-    # Implement this function
+    def add_neg_fact(self, fact):
+        if fact not in self.knowledge:
+            self.neg_knowledge.append(fact)
+
     def infer_facts(self):
         ax = Axiom()
         information_gained = True
         max_iterations = 0
         while information_gained:
             inf_facts = []
+
+            # General axioms
             # Axiom 1: needs 1 fact only:
-            # for fact in self.knowledge:
-            # for f in ax.axiom_1(fact, self):
-            # inf_facts.append(f)
+            for fact in self.knowledge:
+                for f in ax.axiom_1(fact, self):
+                    inf_facts.append(f)
+
+            # Axiom 2A: needs negative facts with the same role
+            if len(self.neg_knowledge) > 3:
+                facts = []
+                for role in Role:
+                    for fact in self.neg_knowledge:
+                        if fact[6:] == str(role.name):
+                            if fact not in facts:
+                                facts.append(fact)
+                    if len(facts) == 4:
+                        for f in ax.axiom_2A(facts):
+                            inf_facts.append(f)
+                    facts = []
+
+            # Axiom 2B: needs negative facts for the same agent
+            if len(self.neg_knowledge) > 3 and False:
+                facts = []
+                for x in range(1,6):
+                    for fact in self.neg_knowledge:
+                        if fact[4] == x:
+                            if fact not in facts:
+                                facts.append(fact)
+                    if len(facts) == 4:
+                        for f in ax.axiom_2B(facts):
+                            inf_facts.append(f)
+                    facts = []
+
+            # Axiom 2A: needs negative facts with the same role
+            if len(self.neg_knowledge) > 3:
+                facts = []
+                for role in Role:
+                    for fact in self.neg_knowledge:
+                        if fact[6:] == str(role.name):
+                            if fact not in facts:
+                                facts.append(fact)
+                    if len(facts) == 4:
+                        for f in ax.axiom_2A(facts):
+                            inf_facts.append(f)
+                    facts = []
+
+            # Axiom 2B: needs negative facts for the same agent
+            if len(self.neg_knowledge) > 3 and False:
+                facts = []
+                for x in range(1, 6):
+                    for fact in self.neg_knowledge:
+                        if fact[4] == x:
+                            if fact not in facts:
+                                facts.append(fact)
+                    if len(facts) == 4:
+                        for f in ax.axiom_2B(facts):
+                            inf_facts.append(f)
+                    facts = []
 
             if self.role.name == 'LOO':
                 # Axiom 3: needs 3 facts:
@@ -83,13 +141,24 @@ class Agent:
 
             # Axiom 5: needs 2 facts bla bla
 
+            for fact in inf_facts:
+                if fact not in self.knowledge or fact not in self.neg_knowledge:
+                    information_gained = True
+                    break
+                else:
+                    information_gained = False
+
             # Check if no facts are added or max iterations reaches 10
-            if len(inf_facts) == 0 and max_iterations < 10:
+            if len(inf_facts) == 0 or max_iterations > 10:
                 information_gained = False
             else:
                 max_iterations += 1
                 for fact in inf_facts:
-                    self.knowledge.append(fact)
+                    if fact[0:3] == 'not':
+                        self.add_neg_fact(fact)
+                    else:
+                        self.add_fact(fact)
+                inf_facts = []
 
     def update_relations(self, worlds):
         ax = Axiom()

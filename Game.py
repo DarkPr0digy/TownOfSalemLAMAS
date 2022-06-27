@@ -80,7 +80,7 @@ class Game:
 
             # TODO: This is a test zone - remove later
             ####################################################################
-            self.worlds.public_announcent("A5_LOO")
+            # self.worlds.public_announcent("A5_LOO")
             ####################################################################
 
             # Update Agent knowledge
