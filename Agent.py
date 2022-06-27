@@ -169,11 +169,11 @@ class Agent:
         self.events.append(Event(event_type, agent.name, target.name, day))
         # self.knowledge.append(agent.name + str(EventTypeAtomic(event_type.value).name) + target.name + "_N" + str(day))
 
-    def vote(self, target, day, num_votes=1):
+    def vote(self, target, day):
         self.register_event(self, target, EventType.Voted, day)
         self.knowledge.append(
             self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D" + str(day))
-        return target, num_votes
+        return target, 1
 
     def determine_my_knowledge(self, worlds, living_agents, living_roles):
         """
@@ -351,6 +351,7 @@ class Agent:
         :return: the name of the agent to vote for
         """
         knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
+        print(self.name, self.role, "KNOWLEDGE", knowledge)
         vote = []
         if self.is_mafia:
             # None is Abstain
@@ -367,6 +368,7 @@ class Agent:
         for x in range(len(vote)):
             vote[x] = vote[x].split("_")[0]
 
+        print(self.name, vote)
         if len(vote) == 0:
             return None
         else:
@@ -427,11 +429,10 @@ class Lookout(Agent):
             for agent in living:
                 if agent.name == target.split("_")[0]:
                     target = agent
-                    break
+                    return target
         else:
             target = living[random.randint(0, len(living) - 1)]
-
-        return target
+            return target
 
 
 class Doctor(Agent):
@@ -467,11 +468,10 @@ class Doctor(Agent):
             for agent in living:
                 if agent.name == target.split("_")[0]:
                     target = agent
-                    break
+                    return target
         else:
             target = living[random.randint(0, len(living) - 1)]
-
-        return target
+            return target
 
 
 class Escort(Agent):
@@ -509,7 +509,6 @@ class Escort(Agent):
             for agent in living:
                 if agent.name == target.split("_")[0]:
                     target = agent
-                    print("Here")
                     break
 
             return target
@@ -522,12 +521,23 @@ class Mayor(Agent):
     def __init__(self, name):
         super().__init__(Role.May, name)
         self.is_revealed = False
+        self.has_announced = False
         self.num_revealed_votes = 3
 
-    def reveal_self(self):
-        self.is_revealed = True
+    def determine_reveal_self(self, worlds, living_agents, living_roles):
+        knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
 
-    def vote(self, target, day, num_votes=1):
+        for keys in knowledge.keys():
+            if keys.split("_")[1] == "GFR" and keys.split("_")[0] != self.name and knowledge[keys]:
+                # I know who the mafia is
+                self.is_revealed = True
+                break
+
+    def reveal_self(self):
+        print("[INFO] Mayor is revealing self")
+        self.has_announced = True
+
+    def vote(self, target, day):
         if self.is_revealed:
             for i in range(self.num_revealed_votes):
                 self.register_event(self, target, EventType.Voted, day)
@@ -538,7 +548,7 @@ class Mayor(Agent):
             self.register_event(self, target, EventType.Voted, day)
             self.knowledge.append(
                 self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D" + str(day))
-            return target, num_votes
+            return target, 1
 
 
 class Veteran(Agent):
@@ -550,6 +560,14 @@ class Veteran(Agent):
     def change_alert(self):
         self.alert = True
         self.used_alert -= 1
+
+    # TODO: Could be smarter?? - based on knowledge
+    def decide_go_active(self, living_agents):
+        alert_probability = random.random()
+        if alert_probability < 1 / (len(living_agents) - 1):
+            if self.used_alert >= 1:
+                self.change_alert()
+                print("[INFO] Vet Is Going Active")
 
     def night_action(self, is_visited, visitors, day):
         if self.alert and is_visited:
@@ -634,21 +652,20 @@ class Godfather(Agent):
         living = [x for x in agents if x.is_alive]
         living.remove(self)
 
-        if len(agents_to_be_target) != 0:
+        if len(agents_to_be_target) > 0:
             target = agents_to_be_target[random.randint(0, len(agents_to_be_target) - 1)]
 
             for agent in living:
                 if agent.name == target.split("_")[0]:
                     target = agent
-                    break
-            return target
+                    return target
         else:
             # Godfather knows who Mafia is thus remove them from potential targets
             for agent in living:
                 if agent.role.name == "Maf":
                     living.remove(agent)
-
-            return living[random.randint(0, len(living) - 1)]
+            target = living[random.randint(0, len(living) - 1)]
+            return target
 
 
 
