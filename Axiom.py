@@ -7,17 +7,7 @@ class Axiom:
         self.axioms = []
         self.facts = []
 
-    def check_axioms(self):
-        facts = []
-        remove = False
-        if not self.axiom_1() is None:
-            facts.append(axiom_1())
-        axiom_2
-        axiom_3
-        if conflict:
-            remove = True
-        return remove
-
+    # Axioms 1 and 2 are axioms to be applied generally
     def axiom_1(self, fact, agent):
         # Axiom 1: Kx Ay_r -> -Az_r
         inferred_facts = []
@@ -29,17 +19,52 @@ class Axiom:
             agent_name = fact[:2]
         else:
             return inferred_facts
-        for counter in range(1,5):
-            if not agent_name == 'A' + str(counter) and not \
-                    agent.name == 'A' + str(counter):
+        for counter in range(1, 6):
+            if not agent_name == 'A' + str(counter):
                 inferred_facts.append("notA" + str(counter) + "_" + role)  # notAy_r
         return inferred_facts
 
-    def axiom_2(self, facts, world, agent, ks):
-        # Not necessary, I think
+    # If I know all but one agent isn't some role, the last agent has that role
+    def axiom_2A(self, facts):
         inferred_facts = []
+        agent_names = []
+        # Extract role
+        role = facts[0][6:]
+        for fact in facts:
+            if not role == fact[6:]:
+                return inferred_facts
+            else:
+                agent_names.append(fact[4])
+        for x in range(1,6):
+            if str(x) not in agent_names:
+                inferred_facts.append('A' + str(x) + '_' + role)
+                return inferred_facts
+
+        print("ERROR: Something went wrong with axiom 2A, quitting")
+        quit()
         return inferred_facts
 
+    # If I know all that an agent does not have role a,b,c and d, we can infer it has role e
+    def axiom_2B(self, facts):
+        inferred_facts = []
+        agent_names = []
+        # Extract role
+        role = facts[0][6:]
+        for fact in facts:
+            if not role == fact[6:]:
+                return inferred_facts
+            else:
+                agent_names.append(fact[4])
+        for x in range(1,6):
+            if str(x) not in agent_names:
+                inferred_facts.append('A' + str(x) + '_' + role)
+                return inferred_facts
+
+        print("ERROR: Something went wrong with axiom 2B, quitting")
+        quit()
+        return inferred_facts
+
+    # Axioms 3 and 4 are only for the lookout
     def axiom_3(self, facts):
         # Au_LOO ^ vVx_Nn ^ wVx_Nn -> Ax_Vet
         inferred_facts = []
@@ -89,7 +114,7 @@ class Axiom:
                             if self.check_fact_is_visit(fact):
                                 if fact[5] == n and not fact[0] == v and fact[2] == x:
                                     return inferred_facts
-                        # If more agents, this should be mafia instead of GFR
+                        # If more mafia agents, this should be mafia instead of GFR
                         # TODO: if roles are added, change this infer
                         inferred_facts.append("A" + str(v) + "_GFR")
         return inferred_facts
