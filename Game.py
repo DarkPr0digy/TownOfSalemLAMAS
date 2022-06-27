@@ -103,7 +103,7 @@ class Game:
             if game_over:
                 break
 
-            # TODO: Failsame GFR - Esc
+            # TODO: Failsafe GFR - Esc
             ####################################################################
             gfr_esc_only = False
             tmp = 0
@@ -165,6 +165,7 @@ class Game:
                                                                     self.agents)
                 print("True knowledge about me", true_knowledge_about_my_role)
                 print("My knowledge about others", my_knowledge_about_others)
+                print("My knowledge possible MAFIA", possible_mafia)
 
 
                 # If you know other agents know your role make public announcements
@@ -182,9 +183,9 @@ class Game:
 
         # Update Agents information after talking
         for agent in self.agents:
-            if agent.is_alive():
-                agent.infer_facts()
-                agent.update_relations(self.worlds.worlds)
+            if agent.is_alive:
+                agent.infer_facts(axioms)
+                agent.update_relations(self.worlds.worlds, axioms)
                 self.worlds.remove_redundant_worlds()
 
 
