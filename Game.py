@@ -152,8 +152,8 @@ class Game:
                                                                                                game.worlds.worlds)
                 my_knowledge_about_others = agent.determine_my_knowledge(game.worlds.worlds, self.living_agents,
                                                                          self.living_roles)
-                my_possible_knowledge_about_others = agent.determine_possibilities(game.worlds.worlds, self.living_agents,
-                                                                         self.living_roles, town=False)
+                possible_mafia = agent.determine_who_could_be_mafia(game.worlds.worlds, self.living_agents, self.living_roles,
+                                                                    self.agents)
                 print("True knowledge about me", true_knowledge_about_my_role)
                 print("My knowledge about others", my_knowledge_about_others)
 
@@ -172,9 +172,10 @@ class Game:
 
         # Update Agents information after talking
         for agent in self.agents:
-            agent.infer_facts()
-            agent.update_relations(self.worlds.worlds)
-            self.worlds.remove_redundant_worlds()
+            if agent.is_alive():
+                agent.infer_facts()
+                agent.update_relations(self.worlds.worlds)
+                self.worlds.remove_redundant_worlds()
 
     def _vote(self, day):
         """
@@ -249,9 +250,8 @@ class Game:
             if agent.is_alive:
                 if agent.role == Role.Esc:
                     # Distract someone every night
-                    agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles,
+                    distract_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles,
                                                           self.agents)
-
 
                     distract_target = self.agents[random.randint(0, self.num_agents - 1)]
                     while distract_target.role == Role.Esc or distract_target.is_alive is False:

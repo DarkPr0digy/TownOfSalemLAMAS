@@ -197,7 +197,6 @@ class Agent:
             self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D" + str(day))
         return target, num_votes
 
-    # TODO: Consider it possible also -  making use of diamond - if they know I am not Mafia then ...
     def determine_my_knowledge(self, worlds, living_agents, living_roles):
         """
         Method to determine the knowledge of the given agent regarding the role of other agents - First order knowledge
@@ -245,14 +244,13 @@ class Agent:
 
         return knowledge
 
-    def determine_possibilities(self, worlds, living_agents, living_roles, town: bool):
+    def determine_possibilities(self, worlds, living_agents, living_roles):
         """
         Method to determine the knowledge of the given agent regarding the possible role of other agents
         :param worlds: The set of worlds
         :param living_agents: The set of living agents
         :param living_roles: The set of living roles
-        :param town: boolean that determines if you want town or not town
-        :return: a dictionary with our knowledge of the roles of the other agents
+        :return: a dictionary with our knowledge of the possible roles of the other agents
         """
         # relations = {'a': {('1', '2')}, 'b': {}} - format needed
         agents = living_agents
@@ -281,24 +279,48 @@ class Agent:
                     world_results.append(form.semantic(ks, world.name))
                 results.append(world_results)
 
-        print("Agent Combinations: ", agent_combinations)
-        for x in range(len(results)):
-            print("World Proposition (", agent_combinations[x], ") World Number", x + 1, ": ", results[x])
+        # print("Agent Combinations: ", agent_combinations)
+        # for x in range(len(results)):
+        #     print("World Proposition (", agent_combinations[x], ") World Number", x + 1, ": ", results[x])
 
         for x in range(len(results)):
-            if all(results[x]):
+            if sum(results[x]) >= 1:
                 results[x] = True
             else:
                 results[x] = False
 
-        knowledge = {}
+        possibilities = {}
         for possible_roles, result in zip(agent_combinations, results):
-            knowledge[possible_roles] = result
+            possibilities[possible_roles] = result
 
-        print("KNOWLEDGE: ", knowledge)
-        exit()
+        return possibilities
 
-        return knowledge
+    def determine_who_could_be_mafia(self, worlds, living_agents, living_roles, agents):
+        """
+        Method to determine who could be a mafia member
+        :param worlds: The set of worlds
+        :param living_agents: The set of living agents
+        :param living_roles: The set of living roles
+        :return: a dictionary with our knowledge of the possible roles of the other agents
+        """
+        possibilities = self.determine_possibilities(worlds, living_agents, living_roles)
+        print(possibilities)
+
+        could_be_mafia = []
+
+        for key in possibilities.keys():
+            agent_name = key.split("_")[0]
+            agent_possible_role = key.split("_")[1]
+            if agent_possible_role == "GFR" and possibilities[key]:
+                could_be_mafia.append(agent_name)
+
+        for x in range(len(could_be_mafia)):
+            for agent in agents:
+                if could_be_mafia[x] == agent.name:
+                    could_be_mafia[x] = agent
+                    break
+
+        return could_be_mafia
 
     def determine_other_agents_knowledge_about_me(self, agents, worlds):
         """
