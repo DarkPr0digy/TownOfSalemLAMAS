@@ -68,7 +68,7 @@ class Game:
         while not game_over:
             # TODO: This is a test zone - remove later
             ####################################################################
-            # self.worlds.public_announcement("A3_GFR")
+            #self.worlds.public_announcement("A3_GFR")
             #self.agents[2].add_fact("A5_LOO")
             #self._infer_knowledge(axioms)
             ####################################################################
@@ -483,69 +483,9 @@ class Game:
 
 
 if __name__ == "__main__":
-    """game = Game()
-    game.run_game()
-
-    day_counter = 1
-    # For each agent, create the accessibility relations
-    for agent in game.agents:
-        game.worlds.create_starting_relations(game.roles, agent)
-    # Create Kripke structures for each world
-    game.worlds.create_kripke_structures()
-    while not game._check_win():
-        print("==================\nNight Time\n==================")
-        for agents in game.agents:
-            print(agents.name + ": " + str(agents.role) + " `is alive` is" + str(agents.is_alive))
-
-        # Do night routine. Finished except for implementation of choosing
-        # action based on knowledge
-        game.night_routine(day=day_counter)
-
-        print("==================\nDay Time\n==================")
-
-        for agent in game.agents:
-            print(agent.name + ": " + str(agent.role) + " `is alive` is" + str(agent.is_alive))
-            agent.infer_facts()  # Add more axioms for the game
-            agent.update_relations(game.worlds.worlds)
-            game.worlds.remove_redundant_worlds()
-
-        day_counter += 1
-
-        #############################
-        game.worlds.public_announcement("A4_GFR")
-        game.day_routine()
-        #############################
-        game._vote()  # TODO: Should be implemented
-
-        for agent in game.agents:
-            if not agent.is_alive:
-                # Reveal the role of the dead agent
-                game.worlds.public_announcement(game.worlds.axioms.get_fact_role(agent))
-                # Reveal last will
-                for fact in agent.knowledge:
-                    game.worlds.public_announcement(fact)
-
-        if len(game.worlds.worlds) == 0:
-            print("[ERROR]: Something went wrong, number of worlds is 0, quitting")
-            quit()
-
-    print("\n=======================Game Over=======================\n")
-    for dead_agent in game.agents:
-        if not dead_agent.is_alive:
-
-            will, _, _ = dead_agent.get_will()
-            # print(will)
-            for fact in dead_agent.knowledge:
-                game.worlds.public_announcement(fact)
-        else:
-            print("Agent %s Won the game!" % dead_agent.name)
-
-    print("Game ends with %d worlds left" % len(game.worlds.worlds))
-    for world in game.worlds.worlds:
-        print(world.assignment)"""
     town_wins = 0
     mafia_wins = 0
-    num_of_games = 500
+    num_of_games = 1000
     for i in range(num_of_games):
         if i % 10 == 0:
             print("Playing game %d/%d" %(i, num_of_games))
