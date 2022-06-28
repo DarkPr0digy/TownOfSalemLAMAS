@@ -15,7 +15,7 @@ def enablePrint():
     sys.stdout = sys.__stdout__
 
 
-# TODO: Implement some sort of a failsafe for the case where Escort and GFR survive till late game to prevent stuck
+# TODO:
 class Game:
     # region Constructor Method
     def __init__(self):
@@ -69,7 +69,8 @@ class Game:
             # TODO: This is a test zone - remove later
             ####################################################################
             # self.worlds.public_announcement("A3_GFR")
-            self.agents[2].add_fact("A5_LOO")
+            #self.agents[2].add_fact("A5_LOO")
+            #self._infer_knowledge(axioms)
             ####################################################################
 
             print("==================Night %s==================" % str(day_counter))
@@ -102,9 +103,8 @@ class Game:
             # Update Agent knowledge
             for agent in self.agents:
                 print(agent.name + ": " + str(agent.role) + " `is alive` is" + str(agent.is_alive))
-                agent.infer_facts(axioms)
-                agent.update_relations(self.worlds.worlds, axioms)
-                self.worlds.remove_redundant_worlds()
+
+            self._infer_knowledge(axioms)
 
             # Day Routine
             game_over, town_wins = self.day_routine(day_counter)
@@ -188,12 +188,22 @@ class Game:
                         pass
                         # print("[INFO] Not enough information about me to share information")
 
-        # Update Agents information after talking
+        # Update Agents Knowledge
+        self._infer_knowledge(axioms)
+
+        # See if Mayor Wants to reveal Self before Vote
         for agent in self.agents:
-            if agent.is_alive:
-                agent.infer_facts(axioms)
-                agent.update_relations(self.worlds.worlds, axioms)
-        self.worlds.remove_redundant_worlds()
+            if agent.role.name == "May" and agent.is_alive:
+                if not agent.is_revealed:
+                    agent.determine_reveal_self(self.worlds.worlds, self.living_agents, self.living_roles)
+
+                # Make public announcement if mayor has revealed self
+                if agent.is_revealed and not agent.has_announced:
+                    agent.reveal_self()
+                    fact = agent.name + "_" + agent.role.name
+                    self.worlds.public_announcement(fact)
+                    self._infer_knowledge(axioms)
+
 
     def _vote(self, day):
         """
@@ -307,12 +317,10 @@ class Game:
 
                     visitations[kill_target.name].append(agent)
 
-                elif agent.role == Role.May:
-                    # If you know who the mafia is, reveal yourself
-                    if not agent.is_revealed:
-                        agent.determine_reveal_self(self.worlds.worlds, self.living_agents, self.living_roles)
-
                 # Skip for now
+                elif agent.role == Role.May:
+                    pass
+
                 elif agent.role == Role.Vig:
                     pass
                 else:
@@ -373,14 +381,10 @@ class Game:
                             if kill_target.is_being_healed:
                                 death_prevented = True
 
-                elif agent.role == Role.May:
-                    # Make public announcement if mayor has revealed self
-                    if agent.is_revealed and not agent.has_announced:
-                        agent.reveal_self()
-                        fact = agent.name+"_"+agent.role.name
-                        self.worlds.public_announcement(fact)
-
                 # Skip for now
+                elif agent.role == Role.May:
+                    pass
+
                 elif agent.role == Role.Vig:
                     pass
                 else:
@@ -453,6 +457,14 @@ class Game:
                     self.living_roles.remove(agent.role.name)
                 except ValueError:
                     pass
+
+    def _infer_knowledge(self, axioms):
+        # Update Agents information after talking
+        for agent in self.agents:
+            if agent.is_alive:
+                agent.infer_facts(axioms)
+                agent.update_relations(self.worlds.worlds, axioms)
+        self.worlds.remove_redundant_worlds()
 
     # Won't be used (legacy)
     def _update_knowledge(self):
@@ -534,14 +546,14 @@ if __name__ == "__main__":
         print(world.assignment)"""
     town_wins = 0
     mafia_wins = 0
-    num_of_games = 1
+    num_of_games = 500
     for i in range(num_of_games):
         if i % 10 == 0:
             print("Playing game %d/%d" %(i, num_of_games))
-        # blockPrint()
+        blockPrint()
         game = Game()
         tw = game.run_game()
-        # enablePrint()
+        enablePrint()
         if tw:
             town_wins += 1
         else:

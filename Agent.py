@@ -217,7 +217,15 @@ class Agent:
         for comb in itertools.product(agents, roles):
             agent_combinations.append(comb[0] + "_" + comb[1])
 
-        agent_combinations.remove(self.name + "_" + self.role.name)
+        items_to_remove = []
+
+        for x in range(len(agent_combinations)):
+            if agent_combinations[x].split("_")[0] == self.name:
+                items_to_remove.append(agent_combinations[x])
+
+        for items in items_to_remove:
+            if items in agent_combinations:
+                agent_combinations.remove(items)
 
         # Get agents relations
         relations = {}
@@ -227,12 +235,11 @@ class Agent:
         ks = KripkeStructure(worlds, relations)
         results = []
         for roles in agent_combinations:
-            if roles != self.name + "_" + self.role.name:
-                form = Box_a(self.name, Atom(roles))
-                world_results = []
-                for world in worlds:
-                    world_results.append(form.semantic(ks, world.name))
-                results.append(world_results)
+            form = Box_a(self.name, Atom(roles))
+            world_results = []
+            for world in worlds:
+                world_results.append(form.semantic(ks, world.name))
+            results.append(world_results)
 
         for x in range(len(results)):
             if all(results[x]):
