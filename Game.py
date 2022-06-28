@@ -88,7 +88,7 @@ class Game:
                 # Look only at dead agents
                 if not agent.is_alive and not agent.will_read:
                     # Reveal their role
-                    game.worlds.public_announcement(axioms.get_fact_role(agent))
+                    self.worlds.public_announcement(axioms.get_fact_role(agent))
 
                     # Reveal their last will
                     for fact in agent.knowledge:
@@ -106,6 +106,7 @@ class Game:
                 agent.update_relations(self.worlds.worlds, axioms)
                 self.worlds.remove_redundant_worlds()
 
+            print("check2")
             # Day Routine
             game_over, town_wins = self.day_routine(day_counter)
             if game_over:
@@ -126,7 +127,6 @@ class Game:
                 game_over = True
                 town_wins = False
             ####################################################################
-
             day_counter += 1
 
         print("\n=======================Game Over=======================\n")
@@ -539,9 +539,10 @@ if __name__ == "__main__":
     for i in range(num_of_games):
         if i % 10 == 0:
             print("Playing game %d/%d" %(i, num_of_games))
+        blockPrint()
         game = Game()
         tw = game.run_game()
-
+        enablePrint()
         if tw:
             town_wins += 1
         else:

@@ -116,10 +116,8 @@ class Worlds:
                 removed_worlds.append(world)
         for removed_world in removed_worlds:
             self.worlds.remove(removed_world)
-        enablePrint()
         if len(self.worlds) == 0:
             quit()
-        blockPrint()
         return removed_worlds
 
     def remove_redundant_worlds(self):
