@@ -4,8 +4,18 @@ from Worlds import *
 from Axiom import Axiom
 import random
 import itertools
+import sys, os
+
+# Disable
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
 
 
+# TODO: Implement some sort of a failsafe for the case where Escort and GFR survive till late game to prevent stuck
 class Game:
     # region Constructor Method
     def __init__(self):
@@ -59,7 +69,7 @@ class Game:
             # TODO: This is a test zone - remove later
             # TODO: I think error is to do with inferences being made based on the knowledge
             ####################################################################
-            self.worlds.public_announcent("A3_GFR")
+            # self.worlds.public_announcement("A3_GFR")
             ####################################################################
 
             print("==================Night %s==================" % str(day_counter))
@@ -78,11 +88,11 @@ class Game:
                 # Look only at dead agents
                 if not agent.is_alive and not agent.will_read:
                     # Reveal their role
-                    game.worlds.public_announcent(axioms.get_fact_role(agent))
+                    game.worlds.public_announcement(axioms.get_fact_role(agent))
 
                     # Reveal their last will
                     for fact in agent.knowledge:
-                        self.worlds.public_announcent(fact)
+                        self.worlds.public_announcement(fact)
 
                     # Show last will on UI
                     print("\n", agent.get_will(), "\n")
@@ -173,7 +183,7 @@ class Game:
                         # print("[INFO] Enough information about me to share information")
                         # Share Knowledge
                         for fact in agent.knowledge:
-                            self.worlds.public_announcent(fact)
+                            self.worlds.public_announcement(fact)
                         break
                     else:
                         pass
@@ -184,7 +194,7 @@ class Game:
             if agent.is_alive:
                 agent.infer_facts(axioms)
                 agent.update_relations(self.worlds.worlds, axioms)
-                self.worlds.remove_redundant_worlds()
+        self.worlds.remove_redundant_worlds()
 
     def _vote(self, day):
         """
@@ -252,6 +262,8 @@ class Game:
         heal_target = None
         observe_target = None
         kill_target = None
+
+        death_prevented = False
 
         for agent in self.agents:
             visitations[agent.name] = []
@@ -337,6 +349,12 @@ class Game:
                                        visitations[agent.name],
                                        day)
 
+                    # Check if the doctor healed the should-be-dead-person
+                    if len(visitations[agent.name]) > 0 and agent.alert:
+                        for vis_agent in visitations[agent.name]:
+                            if vis_agent.is_being_healed:
+                                death_prevented = True
+
                     if agent.alert:
                         agent.alert = False
 
@@ -345,17 +363,23 @@ class Game:
                     if distract_target is None:
                         agent.kill(kill_target, day)
                         visitations[kill_target.name].append(agent)
+                        # Check if the doctor healed the should-be-dead-person
+                        if kill_target.is_being_healed:
+                            death_prevented = True
                     else:
                         if distract_target.role != Role.GFR:
                             agent.kill(kill_target, day)
                             visitations[kill_target.name].append(agent)
+                            # Check if the doctor healed the should-be-dead-person
+                            if kill_target.is_being_healed:
+                                death_prevented = True
 
                 elif agent.role == Role.May:
                     # Make public announcement if mayor has revealed self
                     if agent.is_revealed and not agent.has_announced:
                         agent.reveal_self()
                         fact = agent.name+"_"+agent.role.name
-                        self.worlds.public_announcent(fact)
+                        self.worlds.public_announcement(fact)
 
                 # Skip for now
                 elif agent.role == Role.Vig:
@@ -365,6 +389,12 @@ class Game:
 
         # Update living agents and living roles arrays
         self._update_living_agents()
+
+        if death_prevented:
+            for agent in self.agents:
+                if agent.role == Role.Doc:
+                    fact = agent.name + 'H' + heal_target.name + '_N' + str(day)
+                    agent.add_fact(fact)
 
         # Check if Game over
         game_over, town_wins = self._check_win()
@@ -380,6 +410,15 @@ class Game:
         """
         num_agents_alive = 0
         num_mafia_alive = 0
+
+        if len(self.worlds.worlds) == 0:
+            enablePrint()
+            print("-----------------------ERROR-----------------------")
+            print("ERROR: There were 0 worlds left after the game finished.\n"
+                  "There should be at least 1. Quitting")
+            print("-----------------------ERROR-----------------------")
+            blockPrint()
+            quit()
 
         for agents in self.agents:
             if agents.is_alive:
@@ -463,7 +502,7 @@ if __name__ == "__main__":
         day_counter += 1
 
         #############################
-        game.worlds.public_announcent("A4_GFR")
+        game.worlds.public_announcement("A4_GFR")
         game.day_routine()
         #############################
         game._vote()  # TODO: Should be implemented
@@ -471,10 +510,10 @@ if __name__ == "__main__":
         for agent in game.agents:
             if not agent.is_alive:
                 # Reveal the role of the dead agent
-                game.worlds.public_announcent(game.worlds.axioms.get_fact_role(agent))
+                game.worlds.public_announcement(game.worlds.axioms.get_fact_role(agent))
                 # Reveal last will
                 for fact in agent.knowledge:
-                    game.worlds.public_announcent(fact)
+                    game.worlds.public_announcement(fact)
 
         if len(game.worlds.worlds) == 0:
             print("[ERROR]: Something went wrong, number of worlds is 0, quitting")
@@ -487,7 +526,7 @@ if __name__ == "__main__":
             will, _, _ = dead_agent.get_will()
             # print(will)
             for fact in dead_agent.knowledge:
-                game.worlds.public_announcent(fact)
+                game.worlds.public_announcement(fact)
         else:
             print("Agent %s Won the game!" % dead_agent.name)
 
@@ -496,7 +535,10 @@ if __name__ == "__main__":
         print(world.assignment)"""
     town_wins = 0
     mafia_wins = 0
-    for i in range(1):
+    num_of_games = 200
+    for i in range(num_of_games):
+        if i % 10 == 0:
+            print("Playing game %d/%d" %(i, num_of_games))
         game = Game()
         tw = game.run_game()
 
@@ -504,7 +546,6 @@ if __name__ == "__main__":
             town_wins += 1
         else:
             mafia_wins += 1
-
 
     print("Town Wins: ", town_wins)
     print("Mafia Wins: ", mafia_wins)

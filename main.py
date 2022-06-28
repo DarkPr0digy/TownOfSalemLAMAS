@@ -89,7 +89,7 @@ def remove_worlds(worlds, fact):
     return worlds, removed_worlds
 
 
-def public_announcent(fact, worlds, relation_dict):
+def public_announcement(fact, worlds, relation_dict):
     # In a public announcement, everyone knows that everyone knows that 'fact' is true, and everyone knows
     # that everyone knows that worlds where 'fact' is false is not a feasible world, so remove all worlds
     # where 'fact' is false and remove all relations to the removed worlds
@@ -168,7 +168,7 @@ def main():
     relations_dict = {}
     create_starting_relations(relations_dict, worlds, roles, agents)
 
-    worlds = public_announcent('1D', worlds, relations_dict)
+    worlds = public_announcement('1D', worlds, relations_dict)
 
     # Kripke structure for agent 1
     ks = KripkeStructure(worlds, relations_dict['1'])

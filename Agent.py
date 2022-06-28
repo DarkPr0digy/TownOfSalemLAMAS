@@ -3,6 +3,15 @@ import random
 from enum import Enum
 from Event import Event, EventType, EventTypeAtomic
 from Worlds import *
+import sys, os
+
+# Disable
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
 
 
 class Role(Enum):
@@ -60,7 +69,7 @@ class Agent:
             self.knowledge.append(fact)
 
     def add_neg_fact(self, fact):
-        if fact not in self.knowledge:
+        if fact not in self.neg_knowledge:
             self.neg_knowledge.append(fact)
 
     def infer_facts(self, ax):
@@ -110,14 +119,26 @@ class Agent:
                     for f in ax.axiom_3(facts):
                         inf_facts.append(f)
 
-                # Axiom 4: needs 3 facts
-                for facts in list(itertools.permutations(self.knowledge, 3)):
-                    for f in ax.axiom_4(facts, self.knowledge):
+                # Axiom 4: needs 2 facts
+                for facts in list(itertools.permutations(self.knowledge, 2)):
+                    for f in ax.axiom_4(facts):
                         inf_facts.append(f)
 
                 # Axiom 5: needs 3 facts
                 for facts in list(itertools.permutations(self.knowledge, 3)):
-                    for f in ax.axiom_5(facts):
+                    for f in ax.axiom_5(facts, self.knowledge):
+                        inf_facts.append(f)
+
+                # Axiom 6: needs 3 facts
+                for facts in list(itertools.permutations(self.knowledge, 3)):
+                    for f in ax.axiom_6(facts):
+                        inf_facts.append(f)
+
+            # Axiom 7 is only for the doctor
+            if self.role.name == 'Doc' and False:
+                # Axiom 7: needs 4 facts
+                for facts in list(itertools.permutations(self.knowledge, 4)):
+                    for f in ax.axiom_7(facts):
                         inf_facts.append(f)
 
             for fact in inf_facts:

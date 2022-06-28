@@ -2,7 +2,15 @@ from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
 
 import copy
+import sys, os
 
+# Disable
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
 
 class Worlds:
     def __init__(self, agents, roles, ax):
@@ -77,7 +85,7 @@ class Worlds:
                 del agent.relations[del_rela - counter]
                 counter += 1
 
-    def public_announcent(self, fact):
+    def public_announcement(self, fact):
         # In a public announcement, everyone knows that everyone knows that 'fact' is true, and everyone knows
         # that everyone knows that worlds where 'fact' is false is not a feasible world, so remove all worlds
         # where 'fact' is false and remove all relations to the removed worlds
@@ -108,6 +116,10 @@ class Worlds:
                 removed_worlds.append(world)
         for removed_world in removed_worlds:
             self.worlds.remove(removed_world)
+        enablePrint()
+        if len(self.worlds) == 0:
+            quit()
+        blockPrint()
         return removed_worlds
 
     def remove_redundant_worlds(self):
@@ -163,7 +175,7 @@ class Worlds:
         return True
 
     # Likely won't be used (legacy)
-    def public_announcent_legacy(self, fact):
+    def public_announcement_legacy(self, fact):
         # In a public announcement, everyone knows that everyone knows that 'fact' is true, and everyone knows
         # that everyone knows that worlds where 'fact' is false is not a feasible world, so remove all worlds
         # where 'fact' is false and remove all relations to the removed worlds
