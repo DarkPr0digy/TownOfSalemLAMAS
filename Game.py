@@ -204,7 +204,6 @@ class Game:
                     self.worlds.public_announcement(fact)
                     self._infer_knowledge(axioms)
 
-
     def _vote(self, day):
         """
         The method that allows the agents to vote based on their individual knowledge

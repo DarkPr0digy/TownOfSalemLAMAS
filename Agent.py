@@ -5,9 +5,6 @@ from Event import Event, EventType, EventTypeAtomic
 from Worlds import *
 import sys, os
 
-# TODO: RANDOMIZER FOR AGENT SELECTION (80 knowledge | 20 random)
-# TODO: KNOWLEDGE GENERATION THING ~~~~
-
 # Disable
 def blockPrint():
     sys.stdout = open(os.devnull, 'w')
@@ -39,6 +36,7 @@ class Agent:
         self.name = name
         self.is_alive = True
         self.is_mafia = False
+        self.random_chance = 80 # Percent
 
         # Two seperate knowledge banks for faster execution
         # Theoretically they can be represented in one
@@ -453,7 +451,9 @@ class Lookout(Agent):
         living = [x for x in agents if x.is_alive]
         living.remove(self)
 
-        if len(agents_to_be_watched) > 0:
+        randomizer = random.randint(0, 100)
+
+        if len(agents_to_be_watched) > 0 and randomizer <= self.random_chance:
             target = agents_to_be_watched[random.randint(0, len(agents_to_be_watched) - 1)]
 
             for agent in living:
@@ -492,7 +492,9 @@ class Doctor(Agent):
         living = [x for x in agents if x.is_alive]
         living.remove(self)
 
-        if len(agents_to_be_healed) > 0:
+        randomizer = random.randint(0, 100)
+
+        if len(agents_to_be_healed) > 0 and randomizer <= self.random_chance:
             target = agents_to_be_healed[random.randint(0, len(agents_to_be_healed) - 1)]
 
             for agent in living:
@@ -682,7 +684,9 @@ class Godfather(Agent):
         living = [x for x in agents if x.is_alive]
         living.remove(self)
 
-        if len(agents_to_be_target) > 0:
+        randomizer = random.randint(0, 100)
+
+        if len(agents_to_be_target) > 0 and randomizer <= self.random_chance:
             target = agents_to_be_target[random.randint(0, len(agents_to_be_target) - 1)]
 
             for agent in living:
