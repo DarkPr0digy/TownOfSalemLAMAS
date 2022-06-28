@@ -5,6 +5,9 @@ from Event import Event, EventType, EventTypeAtomic
 from Worlds import *
 import sys, os
 
+# TODO: RANDOMIZER FOR AGENT SELECTION (80 knowledge | 20 random)
+# TODO: KNOWLEDGE GENERATION THING ~~~~
+
 # Disable
 def blockPrint():
     sys.stdout = open(os.devnull, 'w')
@@ -376,7 +379,7 @@ class Agent:
         if self.is_mafia:
             # None is Abstain
             for key in knowledge.keys():
-                if (key.split("_")[1] != "GFR" and key.split("_")[1] != "Maf") and knowledge[key] is True:
+                if (key.split("_")[1] != "GFR" or key.split("_")[1] != "Maf") and knowledge[key] is True:
                     vote.append(key)
         else:
             # Select Mafia if you know who they are
@@ -433,9 +436,10 @@ class Lookout(Agent):
         :return: The name of the agent to use ability on
         """
         knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
+
         agents_to_be_watched = []
         for keys in knowledge.keys():
-            if (keys.split("_")[1] != "GFR" or keys.split("_")[1] != "Maf") and keys.split("_")[0] != self.name and knowledge[keys]:
+            if (keys.split("_")[1] != "GFR") and keys.split("_")[0] != self.name and knowledge[keys]:
                 # It is not a Mafia member therefore you should watch
                 agents_to_be_watched.append(keys)
 
@@ -474,7 +478,7 @@ class Doctor(Agent):
         knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
         agents_to_be_healed = []
         for keys in knowledge.keys():
-            if keys.split("_")[1] != "GFR" and keys.split("_")[1] != "Maf" and keys.split("_")[0] != self.name and knowledge[keys]:
+            if keys.split("_")[1] != "GFR" and keys.split("_")[0] != self.name and knowledge[keys]:
                 # It is not a Mafia member or you therefore you should heal
                 agents_to_be_healed.append(keys)
 
@@ -664,7 +668,7 @@ class Godfather(Agent):
         knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
         agents_to_be_target = []
         for keys in knowledge.keys():
-            if (keys.split("_")[1] != "GFR" or keys.split("_")[1] != "Maf") and keys.split("_")[0] != self.name and knowledge[keys]:
+            if keys.split("_")[0] != self.name and knowledge[keys]:
                 # It is not a Mafia member therefore you should kill
                 agents_to_be_target.append(keys)
 

@@ -67,9 +67,9 @@ class Game:
         game_over, town_wins = self._check_win()
         while not game_over:
             # TODO: This is a test zone - remove later
-            # TODO: I think error is to do with inferences being made based on the knowledge
             ####################################################################
             # self.worlds.public_announcement("A3_GFR")
+            self.agents[2].add_fact("A5_LOO")
             ####################################################################
 
             print("==================Night %s==================" % str(day_counter))
@@ -106,7 +106,6 @@ class Game:
                 agent.update_relations(self.worlds.worlds, axioms)
                 self.worlds.remove_redundant_worlds()
 
-            print("check2")
             # Day Routine
             game_over, town_wins = self.day_routine(day_counter)
             if game_over:
@@ -282,7 +281,7 @@ class Game:
                     # Observe a player each night
                     observe_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles, self.agents)
 
-                    print("Observe Target: ", observe_target)
+                    # print("Observe Target: ", observe_target)
 
                     visitations[observe_target.name].append(agent)
 
@@ -290,7 +289,7 @@ class Game:
                     # Heal a player each night
                     heal_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles, self.agents)
 
-                    print("Heal Target: ", heal_target)
+                    # print("Heal Target: ", heal_target)
 
                     agent.heal(heal_target, day)
                     heal_target.is_being_healed = True
@@ -304,7 +303,7 @@ class Game:
                     # Kill someone every night - MVP
                     kill_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles, self.agents)
 
-                    print("Kill Target: ", kill_target)
+                    # print("Kill Target: ", kill_target)
 
                     visitations[kill_target.name].append(agent)
 
@@ -535,14 +534,14 @@ if __name__ == "__main__":
         print(world.assignment)"""
     town_wins = 0
     mafia_wins = 0
-    num_of_games = 200
+    num_of_games = 1
     for i in range(num_of_games):
         if i % 10 == 0:
             print("Playing game %d/%d" %(i, num_of_games))
-        blockPrint()
+        # blockPrint()
         game = Game()
         tw = game.run_game()
-        enablePrint()
+        # enablePrint()
         if tw:
             town_wins += 1
         else:
