@@ -686,7 +686,7 @@ class Godfather(Agent):
 
         randomizer = random.randint(0, 100)
 
-        if len(agents_to_be_target) > 0 and randomizer <= self.random_chance:
+        if (len(agents_to_be_target) > 0 and randomizer <= self.random_chance):
             target = agents_to_be_target[random.randint(0, len(agents_to_be_target) - 1)]
 
             for agent in living:

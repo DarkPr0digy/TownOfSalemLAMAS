@@ -5,6 +5,8 @@ from Axiom import Axiom
 import random
 import itertools
 import sys, os
+from matplotlib import pyplot as plt
+import numpy as np
 
 # Disable
 def blockPrint():
@@ -52,6 +54,11 @@ class Game:
         :return: Whether town wins or not
         """
         day_counter = 1
+        amount_of_worlds = []
+        days = []
+        for x in range(15):
+            days.append(0)
+        knowledge_agents = [[],[],[],[],[]]
 
         # Create the accessibility Relations for Each Agent
         for agent in self.agents:
@@ -69,7 +76,7 @@ class Game:
             # TODO: This is a test zone - remove later
             ####################################################################
             #self.worlds.public_announcement("A3_GFR")
-            #self.agents[2].add_fact("A5_LOO")
+            #self.agents[2].add_fact("A4_May")
             #self._infer_knowledge(axioms)
             ####################################################################
 
@@ -106,6 +113,13 @@ class Game:
 
             self._infer_knowledge(axioms)
 
+            amount_of_worlds.append(len(self.worlds.worlds))
+            days[day_counter-1] += 1
+            counter = 0
+            for agent in self.agents:
+                knowledge_agents[counter].append(len(agent.knowledge)+len(agent.neg_knowledge))
+                counter += 1
+
             # Day Routine
             game_over, town_wins = self.day_routine(day_counter)
             if game_over:
@@ -138,7 +152,7 @@ class Game:
         for world in self.worlds.worlds:
             print(world.assignment)
 
-        return town_wins
+        return town_wins, amount_of_worlds, knowledge_agents, days
     # endregion
 
     # region Day Routines
@@ -481,22 +495,95 @@ class Game:
                     self.worlds.add_fact_legacy(fact, knowledgeable_agents)
     # endregion
 
+    # begin region result functions
+    def process_data(self, aow_avg, ak_avg, aow, ak):
+        for x in range(len(aow)-1):
+            if aow[x+1] > aow[x]:
+                print("ERROR: Amount of worlds increased!?")
+                print(aow)
+                quit()
+            for y in range(5):
+                if ak[y][x + 1] < ak[y][x]:
+                    print("ERROR: Amount of knowledge decreased!?")
+                    print(ak)
+                    quit()
+        if len(aow) > 30:
+            loop = 30
+        else:
+            loop = len(aow)
+        for x in range(loop):
+            aow_avg[x] += aow[x]
+            for y in range(5):
+                ak_avg[y][x] += ak[y][x]
+
+
+    def plot_worlds(self, array):
+        array = np.array(array)
+        plt.plot(array)
+        plt.ylabel('Amount of worlds')
+        plt.xlabel('Day')
+        plt.title('The average amount of worlds that were considered possible by some agent per day')
+        plt.show()
+
+    def plot_agent_knowledge(self, array):
+        x = 0
+        while not array[0][x] == 0:
+            x += 1
+        counter = 0
+        array = np.array(array)
+        roles = ['Veteran','Doctor','Godfather','Mayor','Lookout']
+        for ar in array:
+            plt.plot(ar[:x], label=roles[counter])
+            counter += 1
+        plt.ylabel('Knowledge (atoms)')
+        plt.xlabel('Day')
+        plt.title('The average amount of knowledge that each agent had per day')
+        plt.legend(loc="upper left")
+        plt.show()
+    # endregion
 
 if __name__ == "__main__":
     town_wins = 0
     mafia_wins = 0
+
+    days_avg = []
+    amount_of_worlds_avg = []
+    agent_knowledge_avg = [[], [], [], [], []]
+    for x in range(15):
+        days_avg.append(0)
+        amount_of_worlds_avg.append(0)
+        for y in range(5):
+            agent_knowledge_avg[y].append(0)
+
+
     num_of_games = 1000
     for i in range(num_of_games):
         if i % 10 == 0:
-            print("Playing game %d/%d" %(i, num_of_games))
+            print("Playing game %d/%d. Town won %d, Mafia won %d" %(i, num_of_games, town_wins, mafia_wins))
         blockPrint()
         game = Game()
-        tw = game.run_game()
+        tw, amount_of_worlds, agent_knowledge, days = game.run_game()
         enablePrint()
+        game.process_data(amount_of_worlds_avg, agent_knowledge_avg, amount_of_worlds, agent_knowledge)
+        for x in range(15):
+            days_avg[x] += days[x]
         if tw:
             town_wins += 1
         else:
             mafia_wins += 1
+
+    print(days_avg)
+    print(amount_of_worlds_avg)
+    print(agent_knowledge_avg)
+
+    for x in range(len(amount_of_worlds_avg)):
+        if not amount_of_worlds_avg[x] == 0:
+            amount_of_worlds_avg[x] = amount_of_worlds_avg[x] / days_avg[x]
+            for y in range(5):
+                agent_knowledge_avg[y][x] = agent_knowledge_avg[y][x] / days_avg[x]
+
+    Game().plot_worlds(amount_of_worlds_avg)
+    Game().plot_agent_knowledge(agent_knowledge_avg)
 
     print("Town Wins: ", town_wins)
     print("Mafia Wins: ", mafia_wins)
