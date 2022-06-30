@@ -3,15 +3,6 @@ import random
 from enum import Enum
 from Event import Event, EventType, EventTypeAtomic
 from Worlds import *
-import sys, os
-
-# Disable
-def blockPrint():
-    sys.stdout = open(os.devnull, 'w')
-
-# Restore
-def enablePrint():
-    sys.stdout = sys.__stdout__
 
 
 class Role(Enum):
@@ -38,7 +29,7 @@ class Agent:
         self.is_mafia = False
         self.random_chance = 80 # Percent
 
-        # Two seperate knowledge banks for faster execution
+        # Two separate knowledge banks for faster execution
         # Theoretically they can be represented in one
         self.knowledge = []
         self.neg_knowledge = []
