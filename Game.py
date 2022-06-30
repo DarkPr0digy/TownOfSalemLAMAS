@@ -171,16 +171,16 @@ class Game:
                 possible_mafia = agent.determine_who_could_be_mafia(self.worlds.worlds, self.living_agents,
                                                                     self.living_roles,
                                                                     self.agents)
-                # TODO: Try share with only agents that know??
+
                 # If you know other agents know your role make public announcements
                 for key in true_knowledge_about_my_role.keys():
                     value = true_knowledge_about_my_role[key]
                     if value is True:
                         # Share Knowledge
                         for fact in agent.knowledge:
-                            self.worlds.public_announcement(fact)
+                            self.worlds.public_announcement(fact=fact)
                         for fact in agent.neg_knowledge:
-                            self.worlds.public_announcement(fact)
+                            self.worlds.public_announcement(fact=fact)
                         break
                     else:
                         pass
@@ -577,6 +577,7 @@ def run_games(num_runs: int):
         tw, amount_of_worlds, agent_knowledge, days = game.run_game()
         game.process_data(amount_of_worlds_avg, agent_knowledge_avg,
                           days_avg, amount_of_worlds, agent_knowledge, days)
+
         enable_print()
         if tw:
             town_wins += 1
@@ -585,15 +586,18 @@ def run_games(num_runs: int):
 
     print("Town Wins: ", town_wins)
     print("Mafia Wins: ", mafia_wins)
+
+    game.plot_worlds(amount_of_worlds_avg, days_avg)
+    game.plot_agent_knowledge(agent_knowledge_avg, days_avg)
 # endregion
 
 
 if __name__ == "__main__":
     # Run one game and view it in a with all details
-    #game = Game()
-    #game.run_game()
+    # game = Game()
+    # game.run_game()
 
     print("\n")
 
     # Run multiple games to analyse overall trends
-    run_games(100)
+    run_games(1000)
