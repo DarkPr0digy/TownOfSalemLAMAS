@@ -162,7 +162,7 @@ class Game:
         print("[INFO] Talking\n=======================================")
         axioms = Axiom(self.roles)
         for agent in self.agents:
-            if agent.is_alive:
+            if agent.is_alive and not agent.is_mafia:
                 # print("Agent ", agent.name)
                 true_knowledge_about_my_role = agent.determine_other_agents_knowledge_about_me(self.agents,
                                                                                                self.worlds.worlds)
@@ -171,13 +171,15 @@ class Game:
                 possible_mafia = agent.determine_who_could_be_mafia(self.worlds.worlds, self.living_agents,
                                                                     self.living_roles,
                                                                     self.agents)
-
+                # TODO: Try share with only agents that know??
                 # If you know other agents know your role make public announcements
                 for key in true_knowledge_about_my_role.keys():
                     value = true_knowledge_about_my_role[key]
                     if value is True:
                         # Share Knowledge
                         for fact in agent.knowledge:
+                            self.worlds.public_announcement(fact)
+                        for fact in agent.neg_knowledge:
                             self.worlds.public_announcement(fact)
                         break
                     else:
@@ -588,8 +590,8 @@ def run_games(num_runs: int):
 
 if __name__ == "__main__":
     # Run one game and view it in a with all details
-    game = Game()
-    game.run_game()
+    #game = Game()
+    #game.run_game()
 
     print("\n")
 

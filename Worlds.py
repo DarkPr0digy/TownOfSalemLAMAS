@@ -77,8 +77,12 @@ class Worlds:
         # In a public announcement, everyone knows that everyone knows that 'fact' is true, and everyone knows
         # that everyone knows that worlds where 'fact' is false is not a feasible world, so remove all worlds
         # where 'fact' is false and remove all relations to the removed worlds
-        for agent in self.agents:
-            agent.add_fact(fact)
+        if fact[0:3] == 'not':
+            for agent in self.agents:
+                agent.add_neg_fact(fact)
+        else:
+            for agent in self.agents:
+                agent.add_fact(fact)
         # If one of the facts is about a role of a different player:
         # Everyone knows that everyone knows that the role was revealed so
         # Remove worlds where that fact is not in the world assignment
