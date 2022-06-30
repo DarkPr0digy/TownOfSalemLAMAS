@@ -86,7 +86,7 @@ class Agent:
                                 facts.append(fact)
                     # If there are 4, we can infer the role of an agent
                     if len(facts) == 4:
-                        for f in ax.axiom_2A(facts):
+                        for f in ax.axiom_2a(facts):
                             inf_facts.append(f)
                     facts = []
 
@@ -101,7 +101,7 @@ class Agent:
                                 facts.append(fact)
                     # If there are 4, we can infer the role of the agent
                     if len(facts) == 4:
-                        for f in ax.axiom_2B(facts, Role):
+                        for f in ax.axiom_2b(facts, Role):
                             inf_facts.append(f)
                     facts = []
 

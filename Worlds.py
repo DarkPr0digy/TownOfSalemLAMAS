@@ -1,16 +1,7 @@
 from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
-
 import copy
-import sys, os
 
-# Disable
-def blockPrint():
-    sys.stdout = open(os.devnull, 'w')
-
-# Restore
-def enablePrint():
-    sys.stdout = sys.__stdout__
 
 class Worlds:
     def __init__(self, agents, roles, ax):
@@ -20,8 +11,9 @@ class Worlds:
         self.worlds = []
         self.worlds = self.create_worlds(self.worlds, self.knowledge_dict,
                                          self.agents, roles)
-        self.kripke_structures = self.create_kripke_structures()
+        self.kripke_structures = []
 
+    # Create all possible worlds, so all combinations of agents and roles
     def create_worlds(self, worlds, knowledge_dict, agents, roles):
         for x in range(len(agents)):
             agent = agents.pop(0)
@@ -39,10 +31,8 @@ class Worlds:
         self.worlds = worlds
         return worlds
 
-    # Finished
+    # Create the relations for each agent for their accessible worlds
     def create_starting_relations(self, roles, agent):
-        # This function can be changed to make it so that you give
-        # the name of the agent and it fetches the relations for that particular agent
         relations = agent.relations
         for role in roles:
             connected_worlds = []
@@ -55,20 +45,18 @@ class Worlds:
                 # Reflexivity relation to itself
                 relations.append((c_world.name, c_world.name))
                 for world in connected_worlds:
-                    # Assume the other one
                     relations.append((c_world.name, world.name))
                     relations.append((world.name, c_world.name))
-                    # Add something for transitivity
         agent.relations = relations
 
-    # Finished
+    # Create kripke structures
     def create_kripke_structures(self):
         ks_structs = {}
         for agent in self.agents:
             ks_structs[agent.name] = KripkeStructure(self.worlds, agent.relations)
         self.kripke_structures = ks_structs
 
-    # Finished (is for removing relations to non-existing worlds)
+    # Remove relations to removed worlds
     def remove_relations_removed_worlds(self, removed_worlds, agents):
         for agent in agents:
             relations = agent.relations
@@ -89,7 +77,6 @@ class Worlds:
         # In a public announcement, everyone knows that everyone knows that 'fact' is true, and everyone knows
         # that everyone knows that worlds where 'fact' is false is not a feasible world, so remove all worlds
         # where 'fact' is false and remove all relations to the removed worlds
-        removed_worlds = []
         for agent in self.agents:
             agent.add_fact(fact)
         # If one of the facts is about a role of a different player:
@@ -99,16 +86,7 @@ class Worlds:
             removed_worlds = self.remove_worlds(fact)
             self.remove_relations_removed_worlds(removed_worlds, self.agents)
 
-    '''
-    --- WIP ---
-    def check_worlds_relations(self):
-        for agent in self.agents:
-            for fact in agent.knowledge:
-                # Check if fact is fact about the role of player Ax
-                if fact[0] == 'A' and fact[2] == '_' and len(fact) == 6:
-                    # Remove relations that are not possible for agents anymore
-    '''
-
+    # Removes worlds that have fact == False from the list
     def remove_worlds(self, fact):
         removed_worlds = []
         for world in self.worlds:
@@ -116,10 +94,9 @@ class Worlds:
                 removed_worlds.append(world)
         for removed_world in removed_worlds:
             self.worlds.remove(removed_world)
-        if len(self.worlds) == 0:
-            quit()
         return removed_worlds
 
+    # Removes worlds that have no relations to it
     def remove_redundant_worlds(self):
         check = 1
         removed_worlds = []
@@ -136,81 +113,3 @@ class Worlds:
                 removed_worlds.append(world)
         for removed_world in removed_worlds:
             self.worlds.remove(removed_world)
-
-
-    def remove_conflicting_worlds(self, test_worlds, fact, copied_worlds):
-        new_worlds = []
-        c_worlds = []
-        counter = 0
-        for world in test_worlds:
-            if self.check_conflict(world, fact):
-                c_worlds.append(copied_worlds[counter])
-                new_worlds.append(world)
-            counter += 1
-        return new_worlds, c_worlds
-
-    def check_fact_exist(self, fact):
-        check = 0
-        for world in self.worlds:
-            if fact in world.assignment:
-                check = 1
-        if check == 1:
-            return True
-        else:
-            return False
-
-    # Add more cases if the function will be used
-    def check_conflict(self, world, fact):
-        # If the fact is Ax_r but it is false in the world assignment, conflict
-        if fact[0] == 'A' and len(fact) == 6:
-            if not fact in world.assignment:
-                return False
-        # If the fact is AxVAy_Nn but x is veteran -> conflict
-        if fact[2] == 'V' and len(fact) == 8:
-            if fact[:2] + '_Vet' in world.assignment:
-                return False
-        # This if it for now
-        return True
-
-    # Likely won't be used (legacy)
-    def public_announcement_legacy(self, fact):
-        # In a public announcement, everyone knows that everyone knows that 'fact' is true, and everyone knows
-        # that everyone knows that worlds where 'fact' is false is not a feasible world, so remove all worlds
-        # where 'fact' is false and remove all relations to the removed worlds
-        removed_worlds = self.remove_worlds(self.worlds, fact)
-        self.remove_relations_removed_worlds(removed_worlds, self.agents)
-
-    # Won't be used (legacy)
-    def add_fact_legacy(self, fact, knowledgeable_agents):
-        new_worlds = []
-        # Add fact
-        copied_worlds = []
-        for world in self.worlds:
-            copied_worlds.append(world.name)
-            new_world = copy.deepcopy(world)
-            new_world.assignment[fact] = True
-            new_worlds.append(new_world)
-        # Remove conflicting worlds
-        new_worlds, copied_worlds = self.remove_conflicting_worlds(new_worlds, fact, copied_worlds)
-        # Which agents know the fact?
-        agent_names = []
-        for agent in knowledgeable_agents:
-            agent_names.append(agent.name)
-        counter = 0
-        # Add new world to the worlds list
-        for world in new_worlds:
-            world.name = new_world_number = len(self.worlds)
-            ogw = int(copied_worlds[counter])
-            counter += 1
-            self.worlds.append(world)
-            for agent in self.agents:
-                if agent.name not in agent_names:
-                    copied_relations = copy.deepcopy(agent.relations)
-                    for relation in agent.relations:
-                        if int(relation[0]) == ogw and int(relation[1]) == ogw:
-                            copied_relations.append((new_world_number, new_world_number))
-                        elif int(relation[0]) == ogw:
-                            copied_relations.append((relation[0], new_world_number))
-                        elif int(relation[1]) == ogw:
-                            copied_relations.append((new_world_number, relation[1]))
-                    agent.relations = copied_relations

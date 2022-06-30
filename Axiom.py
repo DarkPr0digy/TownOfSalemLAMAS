@@ -1,20 +1,18 @@
 from mlsolver.kripke import World, KripkeStructure
 from mlsolver.formula import *
 
+
 class Axiom:
     def __init__(self, roles):
-        self.axioms = []
-        self.facts = []
         self.roles = roles
 
     # Axioms 1 and 2 are axioms to be applied generally
-    def axiom_1(self, fact, agent):
+    def axiom_1(self, fact):
         # Axiom 1: Kx Ay_r -> -Az_r
         inferred_facts = []
-        # Check if fact is correct for axiom 1.
-        # It should be of the type 'Ay_rol'
+        # Check if fact is fact about a role
         if self.check_fact_is_role(fact):
-            # The fact is correct for axiom 1, so extract the role, and agent
+            # Extract the role, and agent
             role = fact[3:]
             agent_name = fact[:2]
         else:
@@ -25,44 +23,38 @@ class Axiom:
         return inferred_facts
 
     # If I know all but one agent isn't some role, the last agent has that role
-    def axiom_2A(self, facts):
+    def axiom_2a(self, facts):
         inferred_facts = []
         agent_names = []
-        # Extract role
         role = facts[0][6:]
+        # This is a double check, should be the case
         for fact in facts:
             if not role == fact[6:]:
                 return inferred_facts
             else:
                 agent_names.append(fact[4])
+        # Infer that the missing agent has the role
         for x in range(1,6):
             if str(x) not in agent_names:
                 inferred_facts.append('A' + str(x) + '_' + role)
                 return inferred_facts
 
-        print("ERROR: Something went wrong with axiom 2A, quitting")
-        quit()
-        return inferred_facts
-
     # If I know all that an agent does not have role a,b,c and d, we can infer it has role e
-    def axiom_2B(self, facts, Role):
+    def axiom_2b(self, facts, Role):
         inferred_facts = []
         accounted_for_roles = []
-        # Extract role
         agent_name = facts[0][4]
+        # This is a double check, should be the case
         for fact in facts:
             if not agent_name == fact[4]:
                 return inferred_facts
             else:
                 accounted_for_roles.append(fact[6:])
+        # Infer that the missing role belongs to the agent
         for role in Role:
             if role.name not in accounted_for_roles and role.name in self.roles:
                 inferred_facts.append('A' + agent_name + '_' + role.name)
                 return inferred_facts
-
-        print("ERROR: Something went wrong with axiom 2B, quitting")
-        quit()
-        return inferred_facts
 
     # Axioms 3, 4, 5 and 6 are only for the lookout
     def axiom_3(self, facts):
@@ -90,8 +82,8 @@ class Axiom:
                                         inferred_facts.append("notA" + str(count) + "_GFR")
                                 for count in [v, w]:
                                     inferred_facts.append("notA" + count + "_LOO")
-                                    inferred_facts.append("notA" + count + "_Doc")
-                                    inferred_facts.append("notA" + count + "_GFR")
+                                    inferred_facts.append("notA" + count + "_Vet")
+                                    inferred_facts.append("notA" + count + "_May")
         return inferred_facts
 
     def axiom_4(self, facts):
@@ -134,7 +126,6 @@ class Axiom:
                             if self.check_fact_is_visit(fact):
                                 if fact[7] == n and not fact[1] == v and fact[4] == x:
                                     return inferred_facts
-                        # If more mafia agents, this should be mafia instead of GFR
                         inferred_facts.append("A" + str(v) + "_GFR")
         return inferred_facts
 
@@ -160,7 +151,7 @@ class Axiom:
         return inferred_facts
 
     def axiom_7(self, facts):
-        # Axiom 7: Au_Doc ^ AuHAx_Nn ^ yD_Nm_GFR ^ Ay_Vet
+        # Axiom 7: Au_Doc ^ AuHAx_Nn ^ yD_Nm_GFR ^ Ay_Vet -> notAx_Doc
         inferred_facts = []
         if len(facts) == 4:
             if self.check_fact_is_role(facts[0]) and facts[0][3:] == 'Doc':
@@ -176,8 +167,6 @@ class Axiom:
                                     and y == facts[3][1] and int(m) < int(n):
                                 inferred_facts.append('notA' + x + '_GFR')
         return inferred_facts
-
-
 
     def check_fact_is_role(self, fact):
         if fact[0] == 'A' and fact[2] == '_' and len(fact) == 6:
@@ -208,7 +197,3 @@ class Axiom:
             return agent.name + "_" + str(agent.role.name)
         else:
             return agent.name + "_" + str(role)
-
-    def get_facts(self, agent):
-        # TODO: Not sure this is what he meant
-        return agent.facts

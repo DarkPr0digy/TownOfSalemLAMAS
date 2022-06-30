@@ -408,13 +408,14 @@ class Game:
         num_agents_alive = 0
         num_mafia_alive = 0
 
+        # Should not happen
         if len(self.worlds.worlds) == 0:
-            enablePrint()
+            enable_print()
             print("-----------------------ERROR-----------------------")
             print("ERROR: There were 0 worlds left after the game finished.\n"
                   "There should be at least 1. Quitting")
             print("-----------------------ERROR-----------------------")
-            blockPrint()
+            block_print()
             quit()
 
         for agents in self.agents:
@@ -459,21 +460,6 @@ class Game:
                 agent.infer_facts(axioms)
                 agent.update_relations(self.worlds.worlds, axioms)
         self.worlds.remove_redundant_worlds()
-
-    # Won't be used (legacy)
-    def _update_knowledge(self):
-        for agent in self.agents:
-            print(agent.name)
-            knowledgeable_agents = []
-            for fact in agent.knowledge:
-                if not self.worlds.check_fact_exist(fact):
-                    print(fact)
-                    knowledgeable_agents.append(agent)
-                    for kn_agent in self.agents:
-                        if kn_agent.name == fact[:2] and \
-                                not kn_agent.name == agent.name:
-                            knowledgeable_agents.append(kn_agent)
-                    self.worlds.add_fact_legacy(fact, knowledgeable_agents)
     # endregion
 
     # begin region result functions
