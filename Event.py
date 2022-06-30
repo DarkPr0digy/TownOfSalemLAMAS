@@ -26,7 +26,17 @@ class EventTypeAtomic(Enum):
 
 
 class Event:
+    """
+    Class structure for an event object that is used to track what happens in game
+    """
     def __init__(self, event_type: EventType, agent: str, target: str, day: int):
+        """
+        Constructor Method
+        :param event_type: The type of event
+        :param agent: The agent doing it
+        :param target: The agent it is done to
+        :param day: The day on which it occurs
+        """
         self.event_type = event_type
         self.agent = agent
         self.target = target

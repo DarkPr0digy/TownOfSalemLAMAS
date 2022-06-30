@@ -20,14 +20,23 @@ class Role(Enum):
 
 
 class Agent:
+    """
+    Overall Agent Superclass that contains methods that each of the individual sub-classes will be able to use
+    """
+
     def __init__(self, role, name):
+        """
+        Constructor Method for General Agent Class
+        :param role: The role of the agent
+        :param name: The name of the Agent
+        """
         self.role = role
         self.will = None
         self.events = []
         self.name = name
         self.is_alive = True
         self.is_mafia = False
-        self.random_chance = 80 # Percent
+        self.random_chance = 80  # Percent
 
         # Two separate knowledge banks for faster execution
         # Theoretically they can be represented in one
@@ -43,11 +52,18 @@ class Agent:
         return str(self.role.name) + ": " + str(self.name)
 
     def death(self):
+        """
+        Method that implements the death of the agent
+        :return:
+        """
         if not self.is_being_healed:
             self.is_alive = False
 
     def get_will(self):
-        # TODO: Add how they died to the will
+        """
+        Method to generate the agents will post mortum
+        :return:
+        """
         self.will = "Last will and Testament of " + self.name + "\n"
         self.will += "------------------------------------------------\n"
         self.will += str("I am the " + str(self.role.name) + "\n")
@@ -57,14 +73,29 @@ class Agent:
         return self.will
 
     def add_fact(self, fact):
+        """
+        Method to add a fact to the agents' knowledge banks
+        :param fact: The fact to be added
+        :return:
+        """
         if fact not in self.knowledge:
             self.knowledge.append(fact)
 
     def add_neg_fact(self, fact):
+        """
+        Method to add a negative fact to an agents' knowledge
+        :param fact: The fact to add
+        :return:
+        """
         if fact not in self.neg_knowledge:
             self.neg_knowledge.append(fact)
 
     def infer_facts(self, ax):
+        """
+        Method to infer more facts based on the agents' alread existing set of facts
+        :param ax: the set of axioms
+        :return:
+        """
         information_gained = True
         max_iterations = 0
         while information_gained:
@@ -72,7 +103,7 @@ class Agent:
             # General axioms
             # Axiom 1: needs 1 fact only:
             for fact in self.knowledge:
-                for f in ax.axiom_1(fact, self):
+                for f in ax.axiom_1(fact):
                     inf_facts.append(f)
 
             # Axiom 2A: needs negative facts with the same role
@@ -94,7 +125,7 @@ class Agent:
             if len(self.neg_knowledge) > 3:
                 facts = []
                 # For every agent, check if there are 4 negative role facts
-                for x in range(1,6):
+                for x in range(1, 6):
                     for fact in self.neg_knowledge:
                         if fact[4] == str(x):
                             if fact not in facts:
@@ -153,6 +184,12 @@ class Agent:
                 inf_facts = []
 
     def update_relations(self, worlds, ax):
+        """
+        Method to update the agents' relations to the worlds in the Kripke Space
+        :param worlds: The set of worlds
+        :param ax: The set of axioms
+        :return:
+        """
         accessible_worlds = []
         removed_worlds = []
         for rel in self.relations:
@@ -176,13 +213,32 @@ class Agent:
             self.relations.remove(relation)
 
     def discover_role(self, target, role):
+        """
+        Method used to discover the role of another agents
+        :param target: The target agent
+        :param role:  the target agents' role
+        :return:
+        """
         self.knowledge.append(target.name + "_" + str(role.name))
 
     def register_event(self, agent, target, event_type: EventType, day: int):
+        """
+        Method to register an event and add it to the agents will
+        :param agent: the agent in question
+        :param target: the target of the action
+        :param event_type: the type of event
+        :param day: the day on which it happened
+        :return:
+        """
         self.events.append(Event(event_type, agent.name, target.name, day))
-        # self.knowledge.append(agent.name + str(EventTypeAtomic(event_type.value).name) + target.name + "_N" + str(day))
 
     def vote(self, target, day):
+        """
+        Generalized voting method for all agents
+        :param target: the target to vote for
+        :param day: the day on which the vote happens
+        :return: the target and the number of votes (default: 1)
+        """
         self.register_event(self, target, EventType.Voted, day)
         self.knowledge.append(
             self.name + str(EventTypeAtomic(EventType.Voted.value).name) + target.name + "_D" + str(day))
@@ -196,7 +252,6 @@ class Agent:
         :param living_roles: The set of living roles
         :return: a dictionary with our knowledge of the roles of the other agents
         """
-        # relations = {'a': {('1', '2')}, 'b': {}} - format needed
         agents = living_agents
         roles = living_roles
 
@@ -250,7 +305,6 @@ class Agent:
         :param living_roles: The set of living roles
         :return: a dictionary with our knowledge of the possible roles of the other agents
         """
-        # relations = {'a': {('1', '2')}, 'b': {}} - format needed
         agents = living_agents
         roles = living_roles
 
@@ -276,10 +330,6 @@ class Agent:
                 for world in worlds:
                     world_results.append(form.semantic(ks, world.name))
                 results.append(world_results)
-
-        # print("Agent Combinations: ", agent_combinations)
-        # for x in range(len(results)):
-        #     print("World Proposition (", agent_combinations[x], ") World Number", x + 1, ": ", results[x])
 
         for x in range(len(results)):
             if sum(results[x]) >= 1:
@@ -408,14 +458,28 @@ class Agent:
 # region Individual Roles
 # region Town
 class Lookout(Agent):
+    """
+    Lookout Subclass that contains methods for the Lookout
+    """
+
     def __init__(self, name):
+        """
+        Constructor Methods
+        :param name: The name of the agent
+        """
         super().__init__(Role.LOO, name)
         self.name = name
 
     def observe(self, target, someone_visited: bool, who_visited: [Agent], day):
+        """
+        Method to observe another agent
+        :param target: the target to be observed
+        :param someone_visited: boolean if someone visited
+        :param who_visited: the set of agents who visited
+        :param day: the day on which the observation occurs
+        :return:
+        """
         self.register_event(self, target, EventType.Observed, day)
-        # TODO: Ignore that I observed them?
-        # self.knowledge[agent.name + "_" + str(EventTypeAtomic(event_type.value).name) + "_" + target.name] = True
 
         if someone_visited:
             for agent in who_visited:
@@ -457,10 +521,24 @@ class Lookout(Agent):
 
 
 class Doctor(Agent):
+    """
+    Doctro Subclass that contains methods for the Doctor
+    """
+
     def __init__(self, name):
+        """
+        Constructor Method for the Doctor
+        :param name: The name of the agent
+        """
         super().__init__(Role.Doc, name)
 
     def heal(self, target, day):
+        """
+        Method to heal another agent
+        :param target: the target
+        :param day: the day on which it occurs
+        :return:
+        """
         self.register_event(self, target, EventType.Healed, day)
         self.knowledge.append(
             self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
@@ -497,11 +575,26 @@ class Doctor(Agent):
             return target
 
 
+# Not used in Final Version
 class Escort(Agent):
+    """
+    Escort Subclass that contains methods for the Escort
+    """
+
     def __init__(self, name):
+        """
+        Constructor Method
+        :param name: The name of the agent
+        """
         super().__init__(Role.Esc, name)
 
     def distract(self, target, day):
+        """
+        Method to distract another agent
+        :param target: the target to distract
+        :param day: the day on which the distraction happens
+        :return:
+        """
         self.register_event(self, target, EventType.Distracted, day)
         self.knowledge.append(
             self.name + str(EventTypeAtomic(EventType.Distracted.value).name) + target.name + "_N" + str(day))
@@ -518,7 +611,8 @@ class Escort(Agent):
 
         agents_to_be_distracted = []
         for keys in knowledge.keys():
-            if (keys.split("_")[1] == "GFR" or keys.split("_")[1] == "Maf") and keys.split("_")[0] != self.name and knowledge[keys]:
+            if (keys.split("_")[1] == "GFR" or keys.split("_")[1] == "Maf") and keys.split("_")[0] != self.name and \
+                    knowledge[keys]:
                 # It is a Mafia member therefore you should distract
                 agents_to_be_distracted.append(keys)
 
@@ -541,13 +635,28 @@ class Escort(Agent):
 
 
 class Mayor(Agent):
+    """
+    Mayor Subclass that contains methods for the Mayor
+    """
+
     def __init__(self, name):
+        """
+        Constructor Method
+        :param name: Name of the agent
+        """
         super().__init__(Role.May, name)
         self.is_revealed = False
         self.has_announced = False
         self.num_revealed_votes = 3
 
     def determine_reveal_self(self, worlds, living_agents, living_roles):
+        """
+        Method  for the mayor to determine if he should reveal himself
+        :param worlds: the set of worlds
+        :param living_agents: the set of living agents
+        :param living_roles: the set fofo living roles
+        :return:
+        """
         knowledge = self.determine_my_knowledge(worlds, living_agents, living_roles)
 
         for keys in knowledge.keys():
@@ -557,10 +666,20 @@ class Mayor(Agent):
                 break
 
     def reveal_self(self):
+        """
+        method to implement revealing of self
+        :return:
+        """
         print("[INFO] Mayor is revealing self")
         self.has_announced = True
 
     def vote(self, target, day):
+        """
+        Vote method extended for the mayor (if he is revealed he gets 3 votes)
+        :param target: the target of the vote
+        :param day: the day on which the vote occurs
+        :return:
+        """
         if self.is_revealed:
             for i in range(self.num_revealed_votes):
                 self.register_event(self, target, EventType.Voted, day)
@@ -575,17 +694,33 @@ class Mayor(Agent):
 
 
 class Veteran(Agent):
+    """
+    Veteran Subclass that contains methods for the Veteran
+    """
+
     def __init__(self, name):
+        """
+        Constructor Method
+        :param name: The name of the agent
+        """
         super().__init__(Role.Vet, name)
         self.alert = False  # implementation for this
         self.used_alert = 2
 
     def change_alert(self):
+        """
+        Method to change the alert status of the vet
+        :return:
+        """
         self.alert = True
         self.used_alert -= 1
 
-    # TODO: Could be smarter?? - based on knowledge
     def decide_go_active(self, living_agents):
+        """
+        Probabilistic method to determine if vet should go active or not
+        :param living_agents: The set of living agents
+        :return:
+        """
         alert_probability = random.random()
         if alert_probability < 1 / (len(living_agents) - 1):
             if self.used_alert >= 1:
@@ -593,6 +728,13 @@ class Veteran(Agent):
                 print("[INFO] Vet Is Going Active")
 
     def night_action(self, is_visited, visitors, day):
+        """
+        The method that is triggered if the agent is visited
+        :param is_visited: boolean to determine if he is visited
+        :param visitors: the set of visitors
+        :param day: the day on which the visiting happens
+        :return:
+        """
         if self.alert and is_visited:
             for visitor in visitors:
                 self.register_event(self, visitor, EventType.Killed, day)
@@ -602,12 +744,26 @@ class Veteran(Agent):
                 visitor.death()
 
 
+# Not used in Final Version
 class Vigilante(Agent):
+    """
+    Vigilante Subclass that contains methods for the Vigilante
+    """
     def __init__(self, name):
+        """
+        Constructor Method
+        :param name: The name of the agent
+        """
         super().__init__(Role.Vig, name)
         self.killed_correctly = None
 
     def kill(self, target, day):
+        """
+        Method to kill a target agent
+        :param target: the target to kill
+        :param day: the day on which the killing happens
+        :return:
+        """
         self.register_event(self, target, EventType.Killed, day)
         self.knowledge.append(
             self.name + str(EventTypeAtomic(EventType.Killed.value).name) + target.name + "_N" + str(day))
@@ -643,15 +799,29 @@ class Vigilante(Agent):
         else:
             return None
 
+
 # endregion
 
 # region Mafia
 class Godfather(Agent):
+    """
+    Godfather Subclass that contains methods for the Godfather
+    """
     def __init__(self, name):
+        """
+        Constructor Method
+        :param name: The name of the agent
+        """
         super().__init__(Role.GFR, name)
         self.is_mafia = True
 
     def kill(self, target, day):
+        """
+        Method to kill a target agent
+        :param target: the target agent
+        :param day: the day on which the killinng happens
+        :return:
+        """
         self.register_event(self, target, EventType.Killed, day)
         self.knowledge.append(
             self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
@@ -693,13 +863,26 @@ class Godfather(Agent):
             return target
 
 
-
+# Not used in Final Version
 class Mafioso(Agent):
+    """
+    Mafioso Subclass that contains methods for the Mafioso
+    """
     def __init__(self, name):
+        """
+        Constructor Method
+        :param name: The name of the agent
+        """
         super().__init__(Role.Maf, name)
         self.is_mafia = True
 
     def kill(self, target, day):
+        """
+        Method to kill a target agent
+        :param target: the target agent
+        :param day: the day on which the killinng happens
+        :return:
+        """
         self.register_event(self, target, EventType.Killed, day)
         self.knowledge.append(
             self.name + str(EventTypeAtomic(EventType.Visited.value).name) + target.name + "_N" + str(day))
@@ -708,31 +891,3 @@ class Mafioso(Agent):
 
 # endregion
 # endregion
-
-
-if __name__ == "__main__":
-    W = Veteran("Bobby Ross")
-    V = Agent(Role.Vet, "Bobby Russo")
-
-    X = Godfather("Don Carlo")
-    Y = Mayor("Adam West")
-    Z = Lookout(name="Snitch McSnitch")
-
-    print(W.role.name)
-    print(X.role.value)
-    print(EventType.Killed.value)
-    print(EventTypeAtomic(EventType.Killed.value).name)
-    print(W.knowledge)
-    print(V.knowledge)
-
-    X.register_event(X, Y, EventType.Distracted, 1)
-    X.register_event(X, Y, EventType.Voted, 1)
-    X.register_event(X, Y, EventType.Killed, 1)
-
-    Z.observe(Y, False, [], 1)
-
-    will = X.get_will()
-    print(will)
-    print("------------------------------------------------\n")
-    will = Z.get_will()
-    print(will)

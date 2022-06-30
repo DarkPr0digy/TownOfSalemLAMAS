@@ -9,20 +9,25 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 
-# Disable
+# Disable Printing
 def block_print():
     sys.stdout = open(os.devnull, 'w')
 
 
-# Restore
+# Restore Printing
 def enable_print():
     sys.stdout = sys.__stdout__
 
 
-# TODO:
 class Game:
+    """
+    Game class structure that combines all the elements of other classes for the full running behaviour
+    """
     # region Constructor Method
     def __init__(self):
+        """
+        Constructor Method for the Game
+        """
         self.num_days = 0
         self.is_over = False
         self.winner = None
@@ -52,7 +57,7 @@ class Game:
     def run_game(self):
         """
         One method that allows the game to be run till it reaches its completion
-        :return: Whether town wins or not
+        :return: Whether town wins or not, the amount of worlds left, the knowledge of agents and the last day
         """
         day_counter = 1
         amount_of_worlds = []
@@ -109,10 +114,10 @@ class Game:
 
             # Data collection
             amount_of_worlds.append(len(self.worlds.worlds))
-            days[day_counter-1] += 1
+            days[day_counter - 1] += 1
             counter = 0
             for agent in self.agents:
-                knowledge_agents[counter].append(len(agent.knowledge)+len(agent.neg_knowledge))
+                knowledge_agents[counter].append(len(agent.knowledge) + len(agent.neg_knowledge))
                 counter += 1
             # Data collection
 
@@ -158,30 +163,25 @@ class Game:
         axioms = Axiom(self.roles)
         for agent in self.agents:
             if agent.is_alive:
-                #print("Agent ", agent.name)
+                # print("Agent ", agent.name)
                 true_knowledge_about_my_role = agent.determine_other_agents_knowledge_about_me(self.agents,
-                                                                                               game.worlds.worlds)
-                my_knowledge_about_others = agent.determine_my_knowledge(game.worlds.worlds, self.living_agents,
+                                                                                               self.worlds.worlds)
+                my_knowledge_about_others = agent.determine_my_knowledge(self.worlds.worlds, self.living_agents,
                                                                          self.living_roles)
-                possible_mafia = agent.determine_who_could_be_mafia(game.worlds.worlds, self.living_agents, self.living_roles,
+                possible_mafia = agent.determine_who_could_be_mafia(self.worlds.worlds, self.living_agents,
+                                                                    self.living_roles,
                                                                     self.agents)
-                # print("True knowledge about me", true_knowledge_about_my_role)
-                # print("My knowledge about others", my_knowledge_about_others)
-                # print("My knowledge possible MAFIA", possible_mafia)
-
 
                 # If you know other agents know your role make public announcements
                 for key in true_knowledge_about_my_role.keys():
                     value = true_knowledge_about_my_role[key]
                     if value is True:
-                        # print("[INFO] Enough information about me to share information")
                         # Share Knowledge
                         for fact in agent.knowledge:
                             self.worlds.public_announcement(fact)
                         break
                     else:
                         pass
-                        # print("[INFO] Not enough information about me to share information")
 
         # Update Agents Knowledge
         self._infer_knowledge(axioms)
@@ -250,7 +250,6 @@ class Game:
 
             # Update living agents and living roles arrays
             self._update_living_agents()
-
     # endregion
 
     # region Night Routines
@@ -276,14 +275,16 @@ class Game:
             if agent.is_alive:
                 if agent.role == Role.Esc:
                     # Distract someone every night
-                    distract_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles,
-                                                          self.agents)
+                    distract_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents,
+                                                                            self.living_roles,
+                                                                            self.agents)
                     agent.distract(distract_target, day)
                     visitations[distract_target.name].append(agent)
 
                 elif agent.role == Role.LOO:
                     # Observe a player each night
-                    observe_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles, self.agents)
+                    observe_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents,
+                                                                           self.living_roles, self.agents)
 
                     # print("Observe Target: ", observe_target)
 
@@ -291,7 +292,8 @@ class Game:
 
                 elif agent.role == Role.Doc:
                     # Heal a player each night
-                    heal_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles, self.agents)
+                    heal_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents,
+                                                                        self.living_roles, self.agents)
 
                     # print("Heal Target: ", heal_target)
 
@@ -305,7 +307,8 @@ class Game:
 
                 elif agent.role == Role.GFR:
                     # Kill someone every night - MVP
-                    kill_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents, self.living_roles, self.agents)
+                    kill_target = agent.determine_who_to_use_ability_on(self.worlds.worlds, self.living_agents,
+                                                                        self.living_roles, self.agents)
 
                     # print("Kill Target: ", kill_target)
 
@@ -454,16 +457,26 @@ class Game:
                     pass
 
     def _infer_knowledge(self, axioms):
+        """
+        Method used to make the agents make inferences based on their knowledge and the axioms
+        :param axioms: the set of axioms
+        :return:
+        """
         # Update Agents information after talking
         for agent in self.agents:
             if agent.is_alive:
                 agent.infer_facts(axioms)
                 agent.update_relations(self.worlds.worlds, axioms)
         self.worlds.remove_redundant_worlds()
+
     # endregion
 
-    # begin region result functions
+    # region result functions
     def get_data_lists(self):
+        """
+        Method to construct the data structures necessary for data analysis
+        :return: 3 lists
+        """
         da = []
         aowa = []
         aka = [[], [], [], [], []]
@@ -475,10 +488,20 @@ class Game:
         return da, aowa, aka
 
     def process_data(self, aow_avg, ak_avg, d_avg, aow, ak, d):
+        """
+        Method to process given run data
+        :param aow_avg:
+        :param ak_avg:
+        :param d_avg:
+        :param aow:
+        :param ak:
+        :param d:
+        :return:
+        """
         for x in range(30):
             d_avg[x] += d[x]
-        for x in range(len(aow)-1):
-            if aow[x+1] > aow[x]:
+        for x in range(len(aow) - 1):
+            if aow[x + 1] > aow[x]:
                 print("ERROR: Amount of worlds increased!?")
                 print(aow)
                 quit()
@@ -520,7 +543,7 @@ class Game:
             x += 1
         counter = 0
         array = np.array(array)
-        roles = ['Veteran','Doctor','Godfather','Mayor','Lookout']
+        roles = ['Veteran', 'Doctor', 'Godfather', 'Mayor', 'Lookout']
         for ar in array:
             plt.plot(ar[:x], label=roles[counter])
             counter += 1
@@ -531,20 +554,28 @@ class Game:
         plt.show()
     # endregion
 
-if __name__ == "__main__":
+
+# region Run Method
+def run_games(num_runs: int):
+    """
+    Method to run the game multiple times to analyse overall trends
+    :param num_runs: the number of runs
+    :return:
+    """
     town_wins = 0
     mafia_wins = 0
 
     days_avg, amount_of_worlds_avg, agent_knowledge_avg = Game().get_data_lists()
 
-    num_of_games = 1
-    for i in range(num_of_games):
+    for i in range(num_runs):
         if i % 10 == 0:
-            print("Playing game %d/%d. Town won %d, Mafia won %d" %(i, num_of_games, town_wins, mafia_wins))
+            print("Playing game %d/%d. Town won %d, Mafia won %d" % (i, num_runs, town_wins, mafia_wins))
         game = Game()
+        block_print()
         tw, amount_of_worlds, agent_knowledge, days = game.run_game()
         game.process_data(amount_of_worlds_avg, agent_knowledge_avg,
                           days_avg, amount_of_worlds, agent_knowledge, days)
+        enable_print()
         if tw:
             town_wins += 1
         else:
@@ -552,3 +583,15 @@ if __name__ == "__main__":
 
     print("Town Wins: ", town_wins)
     print("Mafia Wins: ", mafia_wins)
+# endregion
+
+
+if __name__ == "__main__":
+    # Run one game and view it in a with all details
+    game = Game()
+    game.run_game()
+
+    print("\n")
+
+    # Run multiple games to analyse overall trends
+    run_games(100)
