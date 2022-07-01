@@ -23,6 +23,7 @@ class Game:
     """
     Game class structure that combines all the elements of other classes for the full running behaviour
     """
+
     # region Constructor Method
     def __init__(self):
         """
@@ -51,6 +52,7 @@ class Game:
 
         # Create the worlds
         self.worlds = Worlds(self.agents, self.roles, self.axioms)
+
     # endregion
 
     # region Game Routine
@@ -76,9 +78,6 @@ class Game:
         # Game Loop
         game_over, town_wins = self._check_win()
         while not game_over:
-            if day_counter == 1:
-                self.agents[2].add_fact("A1_Vet")
-                self.agents[2].infer_facts(axioms)
             # Night cycle
             print("==================Night %s==================" % str(day_counter))
             for agent in self.agents:
@@ -88,16 +87,14 @@ class Game:
             game_over, town_wins = self.night_routine(day_counter)
 
             if game_over:
-                # Save the data if its the first day
+                # Save the data if it's the first day
                 # Data collection
-                '''
                 if day_counter == 1:
                     amount_of_worlds.append(len(self.worlds.worlds))
                     counter = 0
                     for agent in self.agents:
                         knowledge_agents[counter].append(len(agent.knowledge) + len(agent.neg_knowledge))
                         counter += 1
-                '''
                 # Data collection
                 break
 
@@ -127,13 +124,11 @@ class Game:
             self._infer_knowledge(axioms)
 
             # Data collection
-            '''
             amount_of_worlds.append(len(self.worlds.worlds))
             counter = 0
             for agent in self.agents:
                 knowledge_agents[counter].append(len(agent.knowledge) + len(agent.neg_knowledge))
                 counter += 1
-            '''
             # Data collection
 
             # Day Routine
@@ -154,6 +149,7 @@ class Game:
             print(world.assignment)
 
         return town_wins, amount_of_worlds, knowledge_agents, day_counter
+
     # endregion
 
     # region Day Routines
@@ -181,12 +177,6 @@ class Game:
                 # print("Agent ", agent.name)
                 true_knowledge_about_my_role = agent.determine_other_agents_knowledge_about_me(self.agents,
                                                                                                self.worlds.worlds)
-                my_knowledge_about_others = agent.determine_my_knowledge(self.worlds.worlds, self.living_agents,
-                                                                         self.living_roles)
-                possible_mafia = agent.determine_who_could_be_mafia(self.worlds.worlds, self.living_agents,
-                                                                    self.living_roles,
-                                                                    self.agents)
-
                 # If you know other agents know your role make public announcements
                 for key in true_knowledge_about_my_role.keys():
                     value = true_knowledge_about_my_role[key]
@@ -267,6 +257,7 @@ class Game:
 
             # Update living agents and living roles arrays
             self._update_living_agents()
+
     # endregion
 
     # region Night Routines
@@ -416,6 +407,7 @@ class Game:
         # Check if Game over
         game_over, town_wins = self._check_win()
         return game_over, town_wins
+
     # endregion
 
     # region Utility Methods
@@ -493,8 +485,6 @@ class Game:
         Method to construct the data structures necessary for data analysis
         :return: 3 lists
         """
-        da = []
-        aowa = []
         da = [0 for x in range(30)]
         aowa = [0 for x in range(30)]
         aka = [[], [], [], [], []]
@@ -503,29 +493,15 @@ class Game:
                 aka[y].append(0)
         return da, aowa, aka
 
-    def process_data(self, aow_avg, ak_avg, d_avg, aow, ak, d):
+    def process_data(self, aow_avg, ak_avg, aow, ak):
         """
         Method to process given run data
         :param aow_avg:
         :param ak_avg:
-        :param d_avg:
         :param aow:
         :param ak:
-        :param d:
         :return:
         """
-        for x in range(30):
-            d_avg[x] += d[x]
-        for x in range(len(aow) - 1):
-            if aow[x + 1] > aow[x]:
-                print("ERROR: Amount of worlds increased!?")
-                print(aow)
-                quit()
-            for y in range(5):
-                if ak[y][x + 1] < ak[y][x]:
-                    print("ERROR: Amount of knowledge decreased!?")
-                    print(ak)
-                    quit()
         if len(aow) > 30:
             loop = 30
         else:
@@ -547,33 +523,41 @@ class Game:
             for y in range(5):
                 ak_avg[y][x] += ak[y][x]
 
-    def plot_worlds(self, array, max_day_reached):
+    def plot_worlds(self, array, max_day_reached, num_runs):
         for x in range(len(array)):
-            if not array[x] == 0:
-                array[x] = array[x] / 1000
+            array[x] = array[x] / num_runs
         array = np.array(array)
-        plt.plot(array[:max_day_reached])
+        plt.plot(array[:int(max_day_reached-1)])
         plt.ylabel('Amount of worlds')
         plt.xlabel('Day')
         plt.title('The average amount of worlds that were considered possible by some agent per day')
         plt.show()
+        plt.savefig('plot_worlds.png')
 
-    def plot_agent_knowledge(self, array, max_day_reached):
-        for x in range(len(array)):
-            if not array[x] == 0:
-                for y in range(5):
-                    array[y][x] = array[y][x] / 1000
+    def plot_agent_knowledge(self, array, max_day_reached, num_runs):
+        ymin = 1000
+        ymax = 0
+        for x in range(len(array[0])):
+            for y in range(5):
+                array[y][x] = array[y][x] / num_runs
+                if ymin > array[y][x]:
+                    ymin = array[y][x]
+                if ymax < array[y][x]:
+                    ymax = array[y][x]
         counter = 0
         array = np.array(array)
         roles = ['Veteran', 'Doctor', 'Godfather', 'Mayor', 'Lookout']
         for ar in array:
-            plt.plot(ar[:max_day_reached], label=roles[counter])
+            plt.plot(ar[:int(max_day_reached-1)], label=roles[counter])
             counter += 1
         plt.ylabel('Knowledge (atoms)')
         plt.xlabel('Day')
         plt.title('The average amount of knowledge that each agent had per day')
         plt.legend(loc="upper left")
+        ax = plt.gca()
+        ax.set_ylim([ymin-0.1*ymin, ymax+0.1*ymax])
         plt.show()
+        plt.savefig('plot_agent_knowledge.png')
     # endregion
 
 # region Run Method
@@ -591,33 +575,29 @@ def run_games(num_runs: int):
     days_avg, amount_of_worlds_avg, agent_knowledge_avg = Game().get_data_lists()
 
     for i in range(num_runs):
-        if i % 10 == 0:
+        if i % 20 == 0:
             print("Playing game %d/%d. Town won %d, Mafia won %d" % (i, num_runs, town_wins, mafia_wins))
         game = Game()
         block_print()
-        tw, amount_of_worlds, agent_knowledge, days = game.run_game()
-        # if day > max_day_reached:
-            # max_day_reached = day
-        game.process_data(amount_of_worlds_avg, agent_knowledge_avg,
-                          days_avg, amount_of_worlds, agent_knowledge, days)
-
+        tw, amount_of_worlds, agent_knowledge, day = game.run_game()
+        if day > max_day_reached:
+            max_day_reached = day
+        game.process_data_alt(amount_of_worlds_avg, agent_knowledge_avg,
+                              amount_of_worlds, agent_knowledge)
         enable_print()
         if tw:
             town_wins += 1
         else:
             mafia_wins += 1
 
-    #print(amount_of_worlds_avg)
-    #print(agent_knowledge_avg)
+    print(amount_of_worlds_avg)
+    print(agent_knowledge_avg)
 
-    #Game().plot_agent_knowledge(agent_knowledge_avg, max_day_reached)
-    #Game().plot_worlds(amount_of_worlds_avg, max_day_reached)
+    Game().plot_agent_knowledge(agent_knowledge_avg, max_day_reached, num_runs)
+    Game().plot_worlds(amount_of_worlds_avg, max_day_reached, num_runs)
 
     print("Town Wins: ", town_wins)
     print("Mafia Wins: ", mafia_wins)
-
-    game.plot_worlds(amount_of_worlds_avg, days_avg)
-    game.plot_agent_knowledge(agent_knowledge_avg, days_avg)
 # endregion
 
 
@@ -629,4 +609,4 @@ if __name__ == "__main__":
     print("\n")
 
     # Run multiple games to analyse overall trends
-    run_games(1000)
+    run_games(20)
