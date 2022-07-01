@@ -772,7 +772,7 @@ class Vigilante(Agent):
 
     def determine_who_to_use_ability_on(self, worlds, living_agents, living_roles, agents):
         """
-        Method to determine which agent the Godfather should kill
+        Method to determine which agent the Vigilante should kill
         :param worlds: the set of worlds
         :param living_agents: the set of living agents
         :param living_roles: the set of living roles
@@ -847,7 +847,8 @@ class Godfather(Agent):
 
         randomizer = random.randint(0, 100)
 
-        if (len(agents_to_be_target) > 0 and randomizer <= self.random_chance):
+        if (len(agents_to_be_target) > 0 and randomizer <= self.random_chance):# or \
+                #len(agents_to_be_target) > 0 and agents_to_be_target[0] == "A1_Vet":
             target = agents_to_be_target[random.randint(0, len(agents_to_be_target) - 1)]
 
             for agent in living:
