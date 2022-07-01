@@ -530,7 +530,7 @@ class Game:
         plt.plot(array[:int(max_day_reached-1)])
         plt.ylabel('Amount of worlds')
         plt.xlabel('Day')
-        plt.title('The average amount of worlds that were considered possible by some agent per day')
+        plt.title('The average number of worlds that were considered possible by some agent per day')
         plt.show()
         plt.savefig('plot_worlds.png')
 
@@ -603,10 +603,10 @@ def run_games(num_runs: int):
 
 if __name__ == "__main__":
     # Run one game and view it in a with all details
-    # game = Game()
-    # game.run_game()
+    game = Game()
+    game.run_game()
 
     print("\n")
 
     # Run multiple games to analyse overall trends
-    run_games(20)
+    run_games(num_runs=1000)
