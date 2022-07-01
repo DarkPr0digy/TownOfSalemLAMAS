@@ -177,7 +177,7 @@ class Game:
         print("[INFO] Talking\n=======================================")
         axioms = Axiom(self.roles)
         for agent in self.agents:
-            if agent.is_alive:
+            if agent.is_alive and not agent.is_mafia:
                 # print("Agent ", agent.name)
                 true_knowledge_about_my_role = agent.determine_other_agents_knowledge_about_me(self.agents,
                                                                                                self.worlds.worlds)
@@ -193,7 +193,9 @@ class Game:
                     if value is True:
                         # Share Knowledge
                         for fact in agent.knowledge:
-                            self.worlds.public_announcement(fact)
+                            self.worlds.public_announcement(fact=fact)
+                        for fact in agent.neg_knowledge:
+                            self.worlds.public_announcement(fact=fact)
                         break
                     else:
                         pass
@@ -598,6 +600,7 @@ def run_games(num_runs: int):
             # max_day_reached = day
         game.process_data(amount_of_worlds_avg, agent_knowledge_avg,
                           days_avg, amount_of_worlds, agent_knowledge, days)
+
         enable_print()
         if tw:
             town_wins += 1
@@ -612,15 +615,18 @@ def run_games(num_runs: int):
 
     print("Town Wins: ", town_wins)
     print("Mafia Wins: ", mafia_wins)
+
+    game.plot_worlds(amount_of_worlds_avg, days_avg)
+    game.plot_agent_knowledge(agent_knowledge_avg, days_avg)
 # endregion
 
 
 if __name__ == "__main__":
     # Run one game and view it in a with all details
-    game = Game()
-    game.run_game()
+    # game = Game()
+    # game.run_game()
 
     print("\n")
 
     # Run multiple games to analyse overall trends
-    run_games(100)
+    run_games(1000)
